@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Antigravity Visual Annotator",
+  "name": "Pinpoint AI — Visual Feedback for AI Pair Programmers",
   "version": "1.0.0",
-  "description": "Live visual annotation and pinpoint feedback tool for localhost web development with Antigravity AI.",
+  "description": "Universal in-browser visual inspection and pinpoint feedback tool for web development with AI pair programmers (Claude, Cursor, ChatGPT, Antigravity, Copilot).",
   "permissions": [
     "storage",
     "clipboardWrite",
@@ -24,7 +24,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Antigravity Visual Annotator"
+    "default_title": "Pinpoint AI"
   },
   "icons": {
     "16": "icon16.png",

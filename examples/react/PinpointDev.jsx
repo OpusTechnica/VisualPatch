@@ -292,7 +292,7 @@ export default function DevAnnotator() {
       return;
     }
     const count = annotations.length;
-    let payload = `### 📌 Antigravity Visual Feedback from Localhost Preview\n`;
+    let payload = `### 📌 Visual Feedback from Localhost Preview\n`;
     payload += `**URL:** \`${window.location.href}\`\n`;
     payload += `**Total Items:** ${count}\n\n`;
 
@@ -305,7 +305,7 @@ export default function DevAnnotator() {
     navigator.clipboard.writeText(payload).then(() => {
       saveAnnotations([]);
       setActiveCard(null);
-      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into chat.`);
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
     }).catch(() => {
       saveAnnotations([]);
       setActiveCard(null);
@@ -737,9 +737,9 @@ export default function DevAnnotator() {
                   boxShadow: '0 0 8px #38bdf8'
                 }} />
 
-                {/* 'A' Glyph */}
+                {/* 'P' Glyph */}
                 <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>
-                  A
+                  P
                 </span>
               </div>
 
@@ -956,7 +956,7 @@ export default function DevAnnotator() {
               title="Click to expand or drag to move anywhere (Alt+T)"
             >
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-              <span>A</span>
+              <span>P</span>
               {annotations.length > 0 && (
                 <span style={{
                   background: '#0071e3',

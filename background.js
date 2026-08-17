@@ -1,6 +1,6 @@
-// Antigravity Visual Annotator - Background Service Worker
+// Pinpoint AI - Background Service Worker
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Antigravity Annotator] Installed successfully.');
+  console.log('[Pinpoint AI] Extension installed successfully.');
 });
 
 // Listen for messages from content scripts or popup

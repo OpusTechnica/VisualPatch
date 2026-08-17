@@ -1,6 +1,7 @@
-# 🎯 Antigravity Visual Annotator
+# 🎯 Pinpoint AI
 
-> **Pinpoint in-browser visual feedback tool for modern web development and AI pair programming.**  
+> **Universal In-Browser Visual Feedback & Inspection Tool for AI Pair Programmers.**  
+> Effortlessly guide **Claude, Cursor, ChatGPT, Antigravity, Windsurf, Copilot, and Devin** with pinpoint precision.  
 > Crafted with an ultra-premium **Linear + Apple-inspired frosted glass aesthetic**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -10,19 +11,34 @@
 
 ---
 
-## 🌟 Overview
+## 🌟 Why Pinpoint AI?
 
-**Antigravity Visual Annotator** eliminates the tedious back-and-forth of explaining UI bugs and styling tweaks to AI assistants (Google Antigravity, Claude, ChatGPT, Cursor, Copilot) or team members. 
+Explaining UI tweaks and CSS bugs in chat is slow and error-prone:
+- ❌ *"Make the second button in the middle a bit higher and change its color."* (Vague, AI guesses the wrong selector)
+- ✅ **With Pinpoint AI**: Click any element on your screen, type your request, and click **Copy for AI**.
 
-Instead of writing vague prompts like *"fix the button on the right"*, simply click on any element in your browser, type what you want changed, and hit **Copy for AI**. The tool automatically captures:
-- Exact CSS selectors (`div.header > button.btn-primary`)
-- Text content snippets
-- Viewport & document coordinates
-- Formats everything into high-precision markdown ready to paste into any AI chat!
+Pinpoint AI automatically inspects:
+1. **Exact CSS Selectors**: `div.hero > div.cta-group > button.btn-primary:nth-of-type(1)`
+2. **Text Content Previews**: `"Schedule Discovery Session"`
+3. **Viewport & Document Coordinates**: Precise anchor points that scroll in sync with your page.
+4. **Structured Markdown Prompt**: Ready to paste directly into any AI assistant or GitHub Issue!
 
 ---
 
-## ✨ Features
+## ⚡ Compatible with All AI Agents
+
+Pinpoint AI produces standard, clean markdown prompts optimized for:
+- 🤖 **Claude / Anthropic** (Claude Code, Artifacts, Web)
+- ⚡ **Cursor IDE**
+- 💬 **ChatGPT / OpenAI** (GPT-4o, Canvas, Codex)
+- 🪄 **Google Antigravity**
+- 🌊 **Windsurf / Codeium**
+- 🐙 **GitHub Copilot Workspace**
+- 🚀 **Devin, v0, Bolt.new, Lovable**
+
+---
+
+## ✨ Key Features
 
 - 💎 **Linear + Apple Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
 - 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
@@ -51,31 +67,31 @@ Instead of writing vague prompts like *"fix the button on the right"*, simply cl
 
 1. **Clone or Download** this repository:
    ```bash
-   git clone https://github.com/OpusTechnica/antigravity-visual-annotator.git
+   git clone https://github.com/OpusTechnica/pinpoint-ai.git
    ```
 2. Open your Chromium browser and go to the extensions management page:
    - **Chrome**: `chrome://extensions`
    - **Edge**: `edge://extensions`
    - **Brave**: `brave://extensions`
 3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** and select the extension folder.
-5. Open any local project running on `localhost` (e.g. `http://localhost:3000` or `http://localhost:5173`) — the sleek **`● A`** dock will appear automatically!
+4. Click **Load unpacked** and select the cloned folder.
+5. Open any local project running on `localhost` (e.g. `http://localhost:3000` or `http://localhost:5173`) — the sleek **`● P`** dock will appear automatically!
 
 ---
 
 ### Option 2: React / Vite In-App Dev Component
 
-If you prefer an in-app zero-extension setup during development, drop `DevAnnotator.jsx` into your project:
+If you prefer an in-app zero-extension setup during development, drop `PinpointDev.jsx` into your project:
 
 ```jsx
 // App.jsx
-import DevAnnotator from './components/dev/DevAnnotator';
+import PinpointDev from './components/dev/PinpointDev';
 
 export default function App() {
   return (
     <>
       <YourAppContent />
-      {import.meta.env.DEV && <DevAnnotator />}
+      {import.meta.env.DEV && <PinpointDev />}
     </>
   );
 }
@@ -83,12 +99,12 @@ export default function App() {
 
 ---
 
-## 📋 Example AI Output
+## 📋 Example Generated AI Prompt
 
 When you click **📋 Copy for AI**, your clipboard will contain structured markdown like this:
 
 ```markdown
-### 📌 Antigravity Visual Feedback from Localhost Preview
+### 📌 Visual Feedback from Localhost Preview
 **URL:** `http://localhost:3000/#`
 **Total Items:** 2
 
