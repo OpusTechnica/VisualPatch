@@ -51,7 +51,7 @@ Instead of writing vague prompts like *"fix the button on the right"*, simply cl
 
 1. **Clone or Download** this repository:
    ```bash
-   git clone https://github.com/<your-username>/antigravity-visual-annotator.git
+   git clone https://github.com/OpusTechnica/antigravity-visual-annotator.git
    ```
 2. Open your Chromium browser and go to the extensions management page:
    - **Chrome**: `chrome://extensions`
