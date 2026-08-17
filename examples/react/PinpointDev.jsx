@@ -67,6 +67,8 @@ export default function DevAnnotator() {
     }
   }, [activeCard]);
 
+  const copyForAIRef = useRef(null);
+
   // Global Keyboard Shortcuts (Capture Phase for Guaranteed Responsiveness)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -89,6 +91,18 @@ export default function DevAnnotator() {
       }
 
       const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+
+      // Ctrl + C / Cmd + C / Alt + C shortcut to copy feedback
+      const isCopyKey = (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') && (e.ctrlKey || e.metaKey || e.altKey);
+      if (isCopyKey) {
+        const hasSelection = window.getSelection() && window.getSelection().toString().trim().length > 0;
+        if (!hasSelection && !isTyping) {
+          e.preventDefault();
+          if (copyForAIRef.current) copyForAIRef.current();
+          return;
+        }
+      }
+
       if (isTyping) return;
 
       if ((e.altKey && e.code === 'KeyT') || e.key === 'F8') {
@@ -331,6 +345,7 @@ export default function DevAnnotator() {
       showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
     });
   };
+  copyForAIRef.current = copyForAI;
 
   // Immediate 1-click clear (no redundant confirmation dialogs)
   const clearAll = () => {
@@ -840,7 +855,7 @@ export default function DevAnnotator() {
                     e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
                   }
                 }}
-                title={`Copy ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} for Antigravity AI`}
+                title={`Copy ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} for AI (Ctrl+C)`}
               >
                 {/* Standard Dual-Sheet Clipboard Copy Icon */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

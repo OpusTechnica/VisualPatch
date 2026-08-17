@@ -516,7 +516,7 @@
         <circle cx="12" cy="12" r="3" />
       </svg>
     </button>
-    <button class="pinpoint-btn-icon" id="pinpoint-btn-copy" title="Copy annotations for AI">
+    <button class="pinpoint-btn-icon" id="pinpoint-btn-copy" title="Copy annotations for AI (Ctrl+C)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -1011,6 +1011,18 @@
 
     const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) ||
                      (shadow.activeElement && ['INPUT', 'TEXTAREA'].includes(shadow.activeElement.tagName));
+
+    // Ctrl + C / Cmd + C / Alt + C shortcut to copy feedback
+    const isCopyKey = (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') && (e.ctrlKey || e.metaKey || e.altKey);
+    if (isCopyKey) {
+      const hasSelection = window.getSelection() && window.getSelection().toString().trim().length > 0;
+      if (!hasSelection && !isTyping) {
+        e.preventDefault();
+        copyForAI();
+        return;
+      }
+    }
+
     if (isTyping) return;
 
     if ((e.altKey && e.code === 'KeyT') || (e.ctrlKey && e.shiftKey && e.code === 'KeyT') || e.key === 'F8') {
