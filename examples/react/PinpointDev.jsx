@@ -67,9 +67,27 @@ export default function DevAnnotator() {
     }
   }, [activeCard]);
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (Capture Phase for Guaranteed Responsiveness)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const isEsc = e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape' || e.keyCode === 27;
+
+      // Instant Escape handling
+      if (isEsc) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 1. If note card is open, dismiss the card
+        if (activeCard) {
+          setActiveCard(null);
+          return;
+        }
+
+        // 2. Otherwise toggle inspect mode on/off
+        setIsInspectMode((prev) => !prev);
+        return;
+      }
+
       const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
       if (isTyping) return;
 
@@ -77,14 +95,15 @@ export default function DevAnnotator() {
         e.preventDefault();
         setIsVisible((prev) => !prev);
       }
-      if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || e.key === 'F9' || e.key === 'Escape') {
+      if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || e.key === 'F9') {
         e.preventDefault();
         setIsInspectMode((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [activeCard]);
 
   // Inspect Mode Hover & Click Handlers
   useEffect(() => {

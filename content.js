@@ -988,9 +988,29 @@
     }, 40);
   }, true);
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (Capture Phase for Guaranteed Responsiveness)
   window.addEventListener('keydown', (e) => {
-    const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+    const isEsc = e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape' || e.keyCode === 27;
+
+    // Instant Escape Handling
+    if (isEsc) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 1. If note card is open, dismiss it
+      const card = shadow.querySelector('.pinpoint-card');
+      if (card) {
+        cardsContainer.innerHTML = '';
+        return;
+      }
+
+      // 2. Otherwise toggle inspect mode on/off
+      toggleInspect();
+      return;
+    }
+
+    const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) ||
+                     (shadow.activeElement && ['INPUT', 'TEXTAREA'].includes(shadow.activeElement.tagName));
     if (isTyping) return;
 
     if ((e.altKey && e.code === 'KeyT') || (e.ctrlKey && e.shiftKey && e.code === 'KeyT') || e.key === 'F8') {
@@ -998,11 +1018,11 @@
       toggleVisibility();
     }
 
-    if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || (e.ctrlKey && e.shiftKey && e.code === 'KeyD') || e.key === 'F9' || e.key === 'Escape') {
+    if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || (e.ctrlKey && e.shiftKey && e.code === 'KeyD') || e.key === 'F9') {
       e.preventDefault();
       toggleInspect();
     }
-  });
+  }, true);
 
   // Toolbar Button Click Handlers
   shadow.getElementById('pinpoint-btn-inspect').addEventListener('click', () => toggleInspect());
