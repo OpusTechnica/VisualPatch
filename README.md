@@ -56,7 +56,8 @@ Pinpoint AI produces standard, clean markdown prompts optimized for:
 | :--- | :--- |
 | <kbd>Alt</kbd> + <kbd>D</kbd> or <kbd>F9</kbd> | **Toggle Inspect Mode** (Drop pins on click) |
 | <kbd>Alt</kbd> + <kbd>T</kbd> or <kbd>F8</kbd> | **Toggle / Minimize Toolbar** |
-| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd> | **Save Pin Note** (inside feedback card) |
+| <kbd>Enter</kbd> | **Save Pin Note** (inside feedback card) |
+| <kbd>Shift</kbd> + <kbd>Enter</kbd> | **New Line** (inside feedback card) |
 | <kbd>Escape</kbd> | **Close Feedback Card** |
 
 ---

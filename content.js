@@ -856,9 +856,11 @@
     card.querySelector('#pinpoint-btn-del-pin').addEventListener('click', deleteNote);
 
     input.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         saveNote();
       } else if (e.key === 'Escape') {
+        e.preventDefault();
         cardsContainer.innerHTML = '';
       }
     });

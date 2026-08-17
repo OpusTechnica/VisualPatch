@@ -560,13 +560,15 @@ export default function DevAnnotator() {
                   e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.6)';
                 }}
                 onKeyDown={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
                     const note = cardText.trim();
                     const updated = annotations.map((a) => (a.id === activeCard.id ? { ...a, note } : a));
                     saveAnnotations(updated);
                     setActiveCard(null);
                     showToast(`Saved Pin #${activeCard.number}`);
                   } else if (e.key === 'Escape') {
+                    e.preventDefault();
                     setActiveCard(null);
                   }
                 }}
