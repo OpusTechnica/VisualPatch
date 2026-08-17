@@ -998,7 +998,7 @@
       toggleVisibility();
     }
 
-    if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || (e.ctrlKey && e.shiftKey && e.code === 'KeyD') || e.key === 'F9') {
+    if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || (e.ctrlKey && e.shiftKey && e.code === 'KeyD') || e.key === 'F9' || e.key === 'Escape') {
       e.preventDefault();
       toggleInspect();
     }

@@ -77,7 +77,7 @@ export default function DevAnnotator() {
         e.preventDefault();
         setIsVisible((prev) => !prev);
       }
-      if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || e.key === 'F9') {
+      if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || e.key === 'F9' || e.key === 'Escape') {
         e.preventDefault();
         setIsInspectMode((prev) => !prev);
       }
