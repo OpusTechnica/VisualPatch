@@ -1,6 +1,6 @@
 /**
- * Pinpoint AI — Universal In-Browser Visual Feedback Tool for AI Coding Assistants
- * Compatible with Claude, Cursor, ChatGPT, Antigravity, Copilot, Windsurf, v0, Devin, etc.
+ * VisualPatch — Universal In-Browser Visual Feedback Tool for AI Coding Assistants
+ * Compatible with Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, v0, Devin, etc.
  * Designed with a Linear + Apple-Inspired Obsidian Glass Aesthetic
  */
 (function () {
@@ -11,8 +11,8 @@
                   window.location.port !== '';
   if (!isLocal) return;
 
-  if (window.__pinpoint_loaded || window.__pinpoint_in_app_active || document.getElementById('dev-annotator-fixed-root')) return;
-  window.__pinpoint_loaded = true;
+  if (window.__visualpatch_loaded || window.__visualpatch_in_app_active || document.getElementById('dev-annotator-fixed-root')) return;
+  window.__visualpatch_loaded = true;
 
   // Global State
   let isInspectMode = false;
@@ -29,13 +29,13 @@
 
   // Load Saved Position
   try {
-    const savedPos = localStorage.getItem('pinpoint_toolbar_pos');
+    const savedPos = localStorage.getItem('visualpatch_toolbar_pos');
     if (savedPos) currentPos = JSON.parse(savedPos);
   } catch (e) {}
 
   // Create Shadow Root Host
   const host = document.createElement('div');
-  host.id = 'pinpoint-host';
+  host.id = 'visualpatch-host';
   host.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 0; pointer-events: none; z-index: 2147483647;';
   
   function mountHost() {
@@ -60,7 +60,7 @@
     }
 
     /* Floating Toolbar (Linear Glass Dock) */
-    .pinpoint-toolbar {
+    .vp-toolbar {
       position: fixed;
       bottom: 24px;
       right: 24px;
@@ -82,7 +82,7 @@
       touch-action: none;
     }
 
-    .pinpoint-toolbar.pinpoint-dragging {
+    .vp-toolbar.vp-dragging {
       opacity: 0.92;
       box-shadow: 0 20px 48px rgba(0, 113, 227, 0.6);
       border-color: #0071e3;
@@ -90,7 +90,7 @@
     }
 
     /* Drag Handle / Brand Badge */
-    .pinpoint-brand-badge {
+    .vp-brand-badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -102,21 +102,21 @@
       transition: background-color 0.15s ease;
     }
 
-    .pinpoint-brand-badge:hover {
+    .vp-brand-badge:hover {
       background-color: rgba(255, 255, 255, 0.09);
     }
 
-    .pinpoint-brand-badge:active {
+    .vp-brand-badge:active {
       cursor: grabbing;
     }
 
-    .pinpoint-drag-dots {
+    .vp-drag-dots {
       opacity: 0.65;
       display: flex;
       align-items: center;
     }
 
-    .pinpoint-brand-dot {
+    .vp-brand-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
@@ -125,7 +125,7 @@
       flex-shrink: 0;
     }
 
-    .pinpoint-btn-icon {
+    .vp-btn-icon {
       width: 30px;
       height: 30px;
       border-radius: 50%;
@@ -140,31 +140,31 @@
       position: relative;
     }
 
-    .pinpoint-btn-icon:hover {
+    .vp-btn-icon:hover {
       transform: scale(1.08);
       background: rgba(255, 255, 255, 0.1);
       color: #ffffff;
     }
 
-    .pinpoint-btn-icon:active {
+    .vp-btn-icon:active {
       transform: scale(0.94);
     }
 
-    .pinpoint-btn-inspect-active {
+    .vp-btn-inspect-active {
       background: rgba(0, 113, 227, 0.28) !important;
       border-color: #0071e3 !important;
       color: #38bdf8 !important;
       box-shadow: 0 0 12px rgba(0, 113, 227, 0.45);
     }
 
-    .pinpoint-btn-copy-has-pins {
+    .vp-btn-copy-has-pins {
       background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%) !important;
       border-color: rgba(0, 113, 227, 0.5) !important;
       color: #ffffff !important;
       box-shadow: 0 2px 10px rgba(0, 113, 227, 0.4);
     }
 
-    .pinpoint-badge-count {
+    .vp-badge-count {
       position: absolute;
       top: -4px;
       right: -4px;
@@ -183,7 +183,7 @@
     }
 
     /* Collapsed Dynamic Island Capsule */
-    .pinpoint-collapsed-pill {
+    .vp-collapsed-pill {
       position: fixed;
       bottom: 24px;
       right: 24px;
@@ -207,12 +207,12 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .pinpoint-collapsed-pill:hover {
+    .vp-collapsed-pill:hover {
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 113, 227, 0.5);
     }
 
     /* Precision Highlighter */
-    .pinpoint-highlighter {
+    .vp-highlighter {
       position: fixed;
       border: 2px solid #0071e3;
       background: transparent;
@@ -224,14 +224,14 @@
       display: none;
     }
 
-    .pinpoint-tag-badge {
+    .vp-tag-badge {
       position: absolute;
       top: -24px;
       left: -2px;
       background: rgba(15, 17, 21, 0.94);
       border: 1px solid rgba(0, 113, 227, 0.5);
       color: #38bdf8;
-      font-size: 10.5px;
+      fontSize: 10.5px;
       font-weight: 600;
       font-family: monospace;
       padding: 2px 7px;
@@ -243,7 +243,7 @@
     }
 
     /* Pin Marker */
-    .pinpoint-pin {
+    .vp-pin {
       position: absolute;
       width: 26px;
       height: 26px;
@@ -263,13 +263,13 @@
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
     }
 
-    .pinpoint-pin:hover {
+    .vp-pin:hover {
       transform: translate(-50%, -50%) scale(1.15);
       box-shadow: 0 6px 20px rgba(0, 113, 227, 0.7), 0 0 0 2px #ffffff, 0 0 0 5px rgba(0, 113, 227, 0.4);
     }
 
     /* Linear / Apple Glass Modal Card */
-    .pinpoint-card {
+    .vp-card {
       position: fixed;
       width: 345px;
       background: rgba(14, 16, 20, 0.96);
@@ -283,15 +283,15 @@
       z-index: 2147483648;
       pointer-events: auto;
       user-select: none;
-      animation: pinpoint-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: vp-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes pinpoint-pop {
+    @keyframes vp-pop {
       from { transform: scale(0.96) translateY(6px); opacity: 0; }
       to { transform: scale(1) translateY(0); opacity: 1; }
     }
 
-    .pinpoint-card-header {
+    .vp-card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -300,7 +300,7 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .pinpoint-card-pin-pill {
+    .vp-card-pin-pill {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -315,7 +315,7 @@
       letter-spacing: 0.02em;
     }
 
-    .pinpoint-card-close {
+    .vp-card-close {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #94a3b8;
@@ -329,12 +329,12 @@
       transition: all 0.15s ease;
     }
 
-    .pinpoint-card-close:hover {
+    .vp-card-close:hover {
       color: #ffffff;
       background: rgba(255, 255, 255, 0.12);
     }
 
-    .pinpoint-card-preview {
+    .vp-card-preview {
       font-size: 11.5px;
       color: #cbd5e1;
       margin-bottom: 12px;
@@ -349,7 +349,7 @@
       white-space: nowrap;
     }
 
-    .pinpoint-textarea {
+    .vp-textarea {
       width: 100%;
       height: 80px;
       background: rgba(0, 0, 0, 0.55);
@@ -366,18 +366,18 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .pinpoint-textarea:focus {
+    .vp-textarea:focus {
       border-color: #0071e3;
       box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.45), inset 0 2px 4px rgba(0, 0, 0, 0.6);
     }
 
-    .pinpoint-card-actions {
+    .vp-card-actions {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    .pinpoint-btn-delete {
+    .vp-btn-delete {
       padding: 6px 11px;
       border-radius: 8px;
       border: 1px solid rgba(239, 68, 68, 0.25);
@@ -392,12 +392,12 @@
       transition: all 0.15s ease;
     }
 
-    .pinpoint-btn-delete:hover {
+    .vp-btn-delete:hover {
       background: rgba(239, 68, 68, 0.18);
       border-color: rgba(239, 68, 68, 0.45);
     }
 
-    .pinpoint-btn-save {
+    .vp-btn-save {
       padding: 6px 14px;
       border-radius: 8px;
       border: none;
@@ -413,13 +413,13 @@
       transition: all 0.15s ease;
     }
 
-    .pinpoint-btn-save:hover {
+    .vp-btn-save:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 16px rgba(0, 113, 227, 0.6);
     }
 
     /* Toast */
-    .pinpoint-toast {
+    .vp-toast {
       position: fixed;
       top: 24px;
       left: 50%;
@@ -443,7 +443,7 @@
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .pinpoint-toast.show {
+    .vp-toast.show {
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
@@ -452,17 +452,17 @@
 
   // Create UI Elements
   const highlighter = document.createElement('div');
-  highlighter.className = 'pinpoint-highlighter';
+  highlighter.className = 'vp-highlighter';
   const tagBadge = document.createElement('div');
-  tagBadge.className = 'pinpoint-tag-badge';
+  tagBadge.className = 'vp-tag-badge';
   highlighter.appendChild(tagBadge);
   shadow.appendChild(highlighter);
 
   // Pins Container (Mounted on document.body for true scrolling coordinates)
-  let pinsContainer = document.getElementById('pinpoint-pins-layer');
+  let pinsContainer = document.getElementById('visualpatch-pins-layer');
   if (!pinsContainer) {
     pinsContainer = document.createElement('div');
-    pinsContainer.id = 'pinpoint-pins-layer';
+    pinsContainer.id = 'visualpatch-pins-layer';
     pinsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 2147483640;';
     document.body.appendChild(pinsContainer);
   }
@@ -471,7 +471,7 @@
   shadow.appendChild(cardsContainer);
 
   const toast = document.createElement('div');
-  toast.className = 'pinpoint-toast';
+  toast.className = 'vp-toast';
   shadow.appendChild(toast);
 
   function showToast(msg) {
@@ -482,8 +482,8 @@
 
   // Create Full Toolbar
   const toolbar = document.createElement('div');
-  toolbar.className = 'pinpoint-toolbar';
-  toolbar.id = 'pinpoint-main-toolbar';
+  toolbar.className = 'vp-toolbar';
+  toolbar.id = 'visualpatch-main-toolbar';
   if (currentPos.x !== null && currentPos.y !== null) {
     toolbar.style.left = `${currentPos.x}px`;
     toolbar.style.top = `${currentPos.y}px`;
@@ -491,8 +491,8 @@
     toolbar.style.bottom = 'auto';
   }
   toolbar.innerHTML = `
-    <div class="pinpoint-brand-badge" id="pinpoint-brand-btn" title="Drag to move toolbar anywhere">
-      <div class="pinpoint-drag-dots">
+    <div class="vp-brand-badge" id="visualpatch-brand-btn" title="Drag to move toolbar anywhere">
+      <div class="vp-drag-dots">
         <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
           <circle cx="2" cy="2" r="1" fill="#ffffff" />
           <circle cx="6" cy="2" r="1" fill="#ffffff" />
@@ -502,11 +502,11 @@
           <circle cx="6" cy="10" r="1" fill="#ffffff" />
         </svg>
       </div>
-      <span class="pinpoint-brand-dot"></span>
-      <span style="font-weight: 800; font-size: 11px;">P</span>
+      <span class="vp-brand-dot"></span>
+      <span style="font-weight: 800; font-size: 11px;">V</span>
     </div>
     <div style="width: 1px; height: 18px; background: rgba(255, 255, 255, 0.1); margin: 0 2px;"></div>
-    <button class="pinpoint-btn-icon" id="pinpoint-btn-inspect" title="Inspect & Drop Pin (Alt+D)">
+    <button class="vp-btn-icon" id="visualpatch-btn-inspect" title="Inspect & Drop Pin (Esc / Alt+D)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <line x1="22" y1="12" x2="18" y2="12" />
@@ -516,20 +516,20 @@
         <circle cx="12" cy="12" r="3" />
       </svg>
     </button>
-    <button class="pinpoint-btn-icon" id="pinpoint-btn-copy" title="Copy annotations for AI (Ctrl+C)">
+    <button class="vp-btn-icon" id="visualpatch-btn-copy" title="Copy annotations for AI (Ctrl+C)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
       </svg>
-      <span class="pinpoint-badge-count" id="pinpoint-count" style="display: none;">0</span>
+      <span class="vp-badge-count" id="visualpatch-count" style="display: none;">0</span>
     </button>
-    <button class="pinpoint-btn-icon" id="pinpoint-btn-clear" title="Clear all pins on this page">
+    <button class="vp-btn-icon" id="visualpatch-btn-clear" title="Clear all pins on this page">
       <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6" />
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       </svg>
     </button>
-    <button class="pinpoint-btn-icon" id="pinpoint-btn-minimize" title="Hide toolbar (Alt+T)">
+    <button class="vp-btn-icon" id="visualpatch-btn-minimize" title="Hide toolbar (Alt+T)">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
@@ -540,7 +540,7 @@
 
   // Collapsed Dynamic Island Capsule
   const collapsedPill = document.createElement('div');
-  collapsedPill.className = 'pinpoint-collapsed-pill';
+  collapsedPill.className = 'vp-collapsed-pill';
   collapsedPill.style.display = 'none';
   if (currentPos.x !== null && currentPos.y !== null) {
     collapsedPill.style.left = `${currentPos.x}px`;
@@ -549,14 +549,14 @@
     collapsedPill.style.bottom = 'auto';
   }
   collapsedPill.innerHTML = `
-    <span class="pinpoint-brand-dot"></span>
-    <span>P</span>
-    <span class="pinpoint-badge-count" id="pinpoint-pill-count" style="display: none; position: static; margin-left: 2px;">0</span>
+    <span class="vp-brand-dot"></span>
+    <span>V</span>
+    <span class="vp-badge-count" id="visualpatch-pill-count" style="display: none; position: static; margin-left: 2px;">0</span>
   `;
   shadow.appendChild(collapsedPill);
 
   // Drag Handling for Toolbar
-  const brandBtn = shadow.getElementById('pinpoint-brand-btn');
+  const brandBtn = shadow.getElementById('visualpatch-brand-btn');
 
   function onMouseDown(e) {
     if (e.button !== 0) return;
@@ -568,7 +568,7 @@
     initialLeft = rect.left;
     initialTop = rect.top;
 
-    toolbar.classList.add('pinpoint-dragging');
+    toolbar.classList.add('vp-dragging');
 
     window.addEventListener('mousemove', onMouseMove, { passive: false });
     window.addEventListener('mouseup', onMouseUp, { once: true });
@@ -599,14 +599,14 @@
 
     currentPos = { x: newLeft, y: newTop };
     try {
-      localStorage.setItem('pinpoint_toolbar_pos', JSON.stringify(currentPos));
+      localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify(currentPos));
     } catch (err) {}
   }
 
   function onMouseUp(e) {
     if (!isDragging) return;
     isDragging = false;
-    toolbar.classList.remove('pinpoint-dragging');
+    toolbar.classList.remove('vp-dragging');
     window.removeEventListener('mousemove', onMouseMove);
   }
 
@@ -645,7 +645,7 @@
 
         currentPos = { x: newX, y: newY };
         try {
-          localStorage.setItem('pinpoint_toolbar_pos', JSON.stringify(currentPos));
+          localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify(currentPos));
         } catch (err) {}
       }
     };
@@ -677,7 +677,7 @@
     }
   }
 
-  shadow.getElementById('pinpoint-btn-minimize').addEventListener('click', () => toggleVisibility(false));
+  shadow.getElementById('visualpatch-btn-minimize').addEventListener('click', () => toggleVisibility(false));
 
   // Helper: Get unique CSS selector
   function getCssSelector(el) {
@@ -696,7 +696,7 @@
           if (sibling.nodeName.toLowerCase() === selector) nth++;
         }
         if (el.className && typeof el.className === 'string') {
-          const classes = el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('pinpoint-')).slice(0, 2);
+          const classes = el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('vp-')).slice(0, 2);
           if (classes.length) selector += `.${classes.join('.')}`;
         }
         if (nth !== 1) selector += `:nth-of-type(${nth})`;
@@ -710,7 +710,7 @@
 
   // Load Saved Annotations from Storage
   function loadSaved() {
-    const storageKey = `pinpoint_notes_${window.location.pathname}`;
+    const storageKey = `visualpatch_notes_${window.location.pathname}`;
     try {
       const data = localStorage.getItem(storageKey);
       if (data) {
@@ -723,7 +723,7 @@
   }
 
   function saveStorage() {
-    const storageKey = `pinpoint_notes_${window.location.pathname}`;
+    const storageKey = `visualpatch_notes_${window.location.pathname}`;
     try {
       localStorage.setItem(storageKey, JSON.stringify(annotations));
     } catch (e) {}
@@ -731,20 +731,20 @@
   }
 
   function updateCount() {
-    const countBadge = shadow.getElementById('pinpoint-count');
-    const pillBadge = shadow.getElementById('pinpoint-pill-count');
-    const copyBtn = shadow.getElementById('pinpoint-btn-copy');
+    const countBadge = shadow.getElementById('visualpatch-count');
+    const pillBadge = shadow.getElementById('visualpatch-pill-count');
+    const copyBtn = shadow.getElementById('visualpatch-btn-copy');
 
     if (annotations.length > 0) {
       countBadge.textContent = annotations.length;
       countBadge.style.display = 'flex';
       pillBadge.textContent = annotations.length;
       pillBadge.style.display = 'inline-flex';
-      copyBtn.classList.add('pinpoint-btn-copy-has-pins');
+      copyBtn.classList.add('vp-btn-copy-has-pins');
     } else {
       countBadge.style.display = 'none';
       pillBadge.style.display = 'none';
-      copyBtn.classList.remove('pinpoint-btn-copy-has-pins');
+      copyBtn.classList.remove('vp-btn-copy-has-pins');
     }
   }
 
@@ -753,7 +753,7 @@
     pinsContainer.innerHTML = '';
     annotations.forEach((item) => {
       const pin = document.createElement('div');
-      pin.className = 'pinpoint-pin';
+      pin.className = 'vp-pin';
       pin.textContent = item.number;
       pin.style.left = `${item.x}px`;
       pin.style.top = `${item.y}px`;
@@ -778,22 +778,22 @@
     const cardY = Math.min(Math.max(item.y - scrollY - 20, 20), window.innerHeight - 280);
 
     const card = document.createElement('div');
-    card.className = 'pinpoint-card';
+    card.className = 'vp-card';
     card.style.left = `${cardX}px`;
     card.style.top = `${cardY}px`;
 
     const pinNumStr = item.number < 10 ? `0${item.number}` : item.number;
 
     card.innerHTML = `
-      <div class="pinpoint-card-header">
+      <div class="vp-card-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="pinpoint-card-pin-pill">
+          <span class="vp-card-pin-pill">
             <span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
             PIN ${pinNumStr}
           </span>
           <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">&lt;${item.tag}&gt;</span>
         </div>
-        <button class="pinpoint-card-close" id="pinpoint-card-close-btn" title="Close (Esc)">
+        <button class="vp-card-close" id="visualpatch-card-close-btn" title="Close (Esc)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -801,14 +801,14 @@
         </button>
       </div>
 
-      <div class="pinpoint-card-preview">
+      <div class="vp-card-preview">
         ${item.textSnippet ? `"${item.textSnippet}"` : item.selector}
       </div>
 
-      <textarea class="pinpoint-textarea" id="pinpoint-note-input" placeholder="What change would you like here?...">${item.note || ''}</textarea>
+      <textarea class="vp-textarea" id="visualpatch-note-input" placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)">${item.note || ''}</textarea>
 
-      <div class="pinpoint-card-actions">
-        <button class="pinpoint-btn-delete" id="pinpoint-btn-del-pin" title="Delete this pin">
+      <div class="vp-card-actions">
+        <button class="vp-btn-delete" id="visualpatch-btn-del-pin" title="Delete this pin">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -817,8 +817,8 @@
         </button>
 
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="pinpoint-card-close" id="pinpoint-btn-cancel-pin" style="width: auto; height: auto; padding: 6px 11px; border-radius: 8px; font-size: 12px;">Cancel</button>
-          <button class="pinpoint-btn-save" id="pinpoint-btn-save-pin">
+          <button class="vp-card-close" id="visualpatch-btn-cancel-pin" style="width: auto; height: auto; padding: 6px 11px; border-radius: 8px; font-size: 12px;">Cancel</button>
+          <button class="vp-btn-save" id="visualpatch-btn-save-pin">
             <span>Save Pin</span>
             <span style="font-size: 10px; opacity: 0.8; font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 4px;">↵</span>
           </button>
@@ -828,7 +828,7 @@
 
     cardsContainer.appendChild(card);
 
-    const input = card.querySelector('#pinpoint-note-input');
+    const input = card.querySelector('#visualpatch-note-input');
     setTimeout(() => {
       input.focus();
       input.select();
@@ -850,10 +850,10 @@
       showToast(`Deleted Pin #${item.number}`);
     };
 
-    card.querySelector('#pinpoint-card-close-btn').addEventListener('click', () => cardsContainer.innerHTML = '');
-    card.querySelector('#pinpoint-btn-cancel-pin').addEventListener('click', () => cardsContainer.innerHTML = '');
-    card.querySelector('#pinpoint-btn-save-pin').addEventListener('click', saveNote);
-    card.querySelector('#pinpoint-btn-del-pin').addEventListener('click', deleteNote);
+    card.querySelector('#visualpatch-card-close-btn').addEventListener('click', () => cardsContainer.innerHTML = '');
+    card.querySelector('#visualpatch-btn-cancel-pin').addEventListener('click', () => cardsContainer.innerHTML = '');
+    card.querySelector('#visualpatch-btn-save-pin').addEventListener('click', saveNote);
+    card.querySelector('#visualpatch-btn-del-pin').addEventListener('click', deleteNote);
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -869,13 +869,13 @@
   // Toggle Inspect Mode
   function toggleInspect(force) {
     isInspectMode = typeof force === 'boolean' ? force : !isInspectMode;
-    const btn = shadow.getElementById('pinpoint-btn-inspect');
+    const btn = shadow.getElementById('visualpatch-btn-inspect');
     if (isInspectMode) {
-      btn.classList.add('pinpoint-btn-inspect-active');
+      btn.classList.add('vp-btn-inspect-active');
       document.body.style.cursor = 'crosshair';
-      showToast('Inspect Mode Active · Click element to pin');
+      showToast('Inspect Mode Active · Click element to pin (Esc to exit)');
     } else {
-      btn.classList.remove('pinpoint-btn-inspect-active');
+      btn.classList.remove('vp-btn-inspect-active');
       highlighter.style.display = 'none';
       document.body.style.cursor = 'default';
     }
@@ -889,7 +889,7 @@
     }
 
     const count = annotations.length;
-    let payload = `### 📌 Visual Feedback from Localhost Preview\n`;
+    let payload = `### 📌 VisualPatch Feedback from Localhost Preview\n`;
     payload += `**URL:** \`${window.location.href}\`\n`;
     payload += `**Total Items:** ${count}\n\n`;
 
@@ -905,21 +905,21 @@
       saveStorage();
       renderPins();
       cardsContainer.innerHTML = '';
-      showToast(`📋 Copied & cleared ${count} annotation${count > 1 ? 's' : ''}! Paste into AI chat.`);
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
     }).catch(() => {
       annotations = [];
       currentPinNumber = 1;
       saveStorage();
       renderPins();
       cardsContainer.innerHTML = '';
-      showToast(`📋 Copied & cleared ${count} annotation${count > 1 ? 's' : ''}!`);
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
     });
   }
 
   // DOM Event Listeners for Inspection & Pin Drop
   document.addEventListener('mousemove', (e) => {
     if (!isInspectMode) return;
-    if (e.target.closest('#pinpoint-host') || e.target.closest('#pinpoint-pins-layer')) return;
+    if (e.target.closest('#visualpatch-host') || e.target.closest('#visualpatch-pins-layer')) return;
 
     const el = e.target;
     if (!el || el === document.body || el === document.documentElement || el.id === 'root') {
@@ -947,7 +947,7 @@
 
   document.addEventListener('click', (e) => {
     if (!isInspectMode) return;
-    if (e.target.closest('#pinpoint-host') || e.target.closest('#pinpoint-pins-layer')) return;
+    if (e.target.closest('#visualpatch-host') || e.target.closest('#visualpatch-pins-layer')) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -982,7 +982,7 @@
 
     // Auto open note card for the new pin
     setTimeout(() => {
-      const pins = pinsContainer.querySelectorAll('.pinpoint-pin');
+      const pins = pinsContainer.querySelectorAll('.vp-pin');
       const lastPin = pins[pins.length - 1];
       if (lastPin) openNoteCard(newAnnotation, lastPin);
     }, 40);
@@ -998,7 +998,7 @@
       e.stopPropagation();
 
       // 1. If note card is open, dismiss it
-      const card = shadow.querySelector('.pinpoint-card');
+      const card = shadow.querySelector('.vp-card');
       if (card) {
         cardsContainer.innerHTML = '';
         return;
@@ -1037,9 +1037,9 @@
   }, true);
 
   // Toolbar Button Click Handlers
-  shadow.getElementById('pinpoint-btn-inspect').addEventListener('click', () => toggleInspect());
-  shadow.getElementById('pinpoint-btn-copy').addEventListener('click', copyForAI);
-  shadow.getElementById('pinpoint-btn-clear').addEventListener('click', () => {
+  shadow.getElementById('visualpatch-btn-inspect').addEventListener('click', () => toggleInspect());
+  shadow.getElementById('visualpatch-btn-copy').addEventListener('click', copyForAI);
+  shadow.getElementById('visualpatch-btn-clear').addEventListener('click', () => {
     if (annotations.length) {
       annotations = [];
       currentPinNumber = 1;
@@ -1052,5 +1052,5 @@
 
   // Initialize
   loadSaved();
-  console.log('%c[Pinpoint AI] Ready! Shortcuts: Alt+T (Toggle Toolbar) · Alt+D (Drop Pins)', 'background: #0071e3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+  console.log('%c[VisualPatch] Ready! Shortcuts: Esc / Alt+D (Inspect) · Ctrl+C (Copy) · Alt+T (Toolbar)', 'background: #0071e3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
 })();

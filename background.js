@@ -1,6 +1,6 @@
-// Pinpoint AI - Background Service Worker
+// VisualPatch - Background Service Worker
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Pinpoint AI] Extension installed successfully.');
+  console.log('[VisualPatch] Extension installed successfully.');
 });
 
 // Listen for messages from content scripts or popup

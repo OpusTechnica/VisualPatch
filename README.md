@@ -1,7 +1,7 @@
-# 🎯 Pinpoint AI
+# 🎯 VisualPatch
 
 > **Universal In-Browser Visual Feedback & Inspection Tool for AI Pair Programmers.**  
-> Effortlessly guide **Claude, Cursor, ChatGPT, Antigravity, Windsurf, Copilot, and Devin** with pinpoint precision.  
+> Effortlessly guide **Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, and Devin** with pinpoint visual precision.  
 > Crafted with an ultra-premium **Linear + Apple-inspired frosted glass aesthetic**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -11,29 +11,29 @@
 
 ---
 
-## 🌟 Why Pinpoint AI?
+## 🌟 Why VisualPatch?
 
-Explaining UI tweaks and CSS bugs in chat is slow and error-prone:
+Explaining UI tweaks, alignment issues, and styling bugs to AI in chat is slow and frustrating:
 - ❌ *"Make the second button in the middle a bit higher and change its color."* (Vague, AI guesses the wrong selector)
-- ✅ **With Pinpoint AI**: Click any element on your screen, type your request, and click **Copy for AI**.
+- ✅ **With VisualPatch**: Click any element on your screen, type your request, and press **Enter** (or **Ctrl+C**).
 
-Pinpoint AI automatically inspects:
+VisualPatch automatically captures:
 1. **Exact CSS Selectors**: `div.hero > div.cta-group > button.btn-primary:nth-of-type(1)`
 2. **Text Content Previews**: `"Schedule Discovery Session"`
 3. **Viewport & Document Coordinates**: Precise anchor points that scroll in sync with your page.
-4. **Structured Markdown Prompt**: Ready to paste directly into any AI assistant or GitHub Issue!
+4. **Structured Markdown Prompt**: Ready to paste directly into any AI assistant, PR, or Issue!
 
 ---
 
 ## ⚡ Compatible with All AI Agents
 
-Pinpoint AI produces standard, clean markdown prompts optimized for:
+VisualPatch produces standard, clean markdown prompts optimized for:
 - 🤖 **Claude / Anthropic** (Claude Code, Artifacts, Web)
 - ⚡ **Cursor IDE**
 - 💬 **ChatGPT / OpenAI** (GPT-4o, Canvas, Codex)
-- 🪄 **Google Antigravity**
 - 🌊 **Windsurf / Codeium**
 - 🐙 **GitHub Copilot Workspace**
+- 🪄 **Google Antigravity**
 - 🚀 **Devin, v0, Bolt.new, Lovable**
 
 ---
@@ -43,9 +43,9 @@ Pinpoint AI produces standard, clean markdown prompts optimized for:
 - 💎 **Linear + Apple Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
 - 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
 - 📍 **True-Document Pin Anchoring**: Dropped pins stay glued to their exact document position even during smooth scrolling.
+- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, and <kbd>Esc</kbd> to toggle inspect mode.
 - 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown for your AI assistant and immediately resets pins so you never get duplicates.
 - 🖐️ **Draggable Anywhere**: Drag the toolbar or the collapsed capsule to any corner of your screen—persists smoothly across page refreshes.
-- ⚡ **Global Keyboard Shortcuts**: Control inspection and visibility without touching your mouse.
 - 🛡️ **Zero Telemetry / 100% Local**: Runs strictly on local development domains (`localhost`, `127.0.0.1`, local ports). No external servers, no tracking, zero analytics.
 
 ---
@@ -69,7 +69,7 @@ Pinpoint AI produces standard, clean markdown prompts optimized for:
 
 1. **Clone or Download** this repository:
    ```bash
-   git clone https://github.com/OpusTechnica/pinpoint-ai.git
+   git clone https://github.com/OpusTechnica/VisualPatch.git
    ```
 2. Open your Chromium browser and go to the extensions management page:
    - **Chrome**: `chrome://extensions`
@@ -77,23 +77,23 @@ Pinpoint AI produces standard, clean markdown prompts optimized for:
    - **Brave**: `brave://extensions`
 3. Enable **Developer mode** (toggle in the top-right corner).
 4. Click **Load unpacked** and select the cloned folder.
-5. Open any local project running on `localhost` (e.g. `http://localhost:3000` or `http://localhost:5173`) — the sleek **`● P`** dock will appear automatically!
+5. Open any local project running on `localhost` (e.g. `http://localhost:3000` or `http://localhost:5173`) — the sleek **`● V`** dock will appear automatically!
 
 ---
 
 ### Option 2: React / Vite In-App Dev Component
 
-If you prefer an in-app zero-extension setup during development, drop `PinpointDev.jsx` into your project:
+If you prefer an in-app zero-extension setup during development, drop `VisualPatchDev.jsx` into your project:
 
 ```jsx
 // App.jsx
-import PinpointDev from './components/dev/PinpointDev';
+import VisualPatchDev from './components/dev/VisualPatchDev';
 
 export default function App() {
   return (
     <>
       <YourAppContent />
-      {import.meta.env.DEV && <PinpointDev />}
+      {import.meta.env.DEV && <VisualPatchDev />}
     </>
   );
 }
@@ -103,10 +103,10 @@ export default function App() {
 
 ## 📋 Example Generated AI Prompt
 
-When you click **📋 Copy for AI**, your clipboard will contain structured markdown like this:
+When you click **📋 Copy for AI** (or press **Ctrl+C**), your clipboard will contain structured markdown like this:
 
 ```markdown
-### 📌 Visual Feedback from Localhost Preview
+### 📌 VisualPatch Feedback from Localhost Preview
 **URL:** `http://localhost:3000/#`
 **Total Items:** 2
 

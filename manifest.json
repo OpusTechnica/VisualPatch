@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Pinpoint AI — Visual Feedback for AI Pair Programmers",
+  "name": "VisualPatch — Visual Feedback for AI Pair Programmers",
   "version": "1.0.0",
-  "description": "Universal in-browser visual inspection and pinpoint feedback tool for web development with AI pair programmers (Claude, Cursor, ChatGPT, Antigravity, Copilot).",
+  "description": "Universal in-browser visual inspection and feedback tool for web development with AI pair programmers (Claude, Cursor, ChatGPT, Windsurf, Copilot).",
   "permissions": [
     "storage",
     "clipboardWrite",
@@ -24,7 +24,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Pinpoint AI"
+    "default_title": "VisualPatch"
   },
   "icons": {
     "16": "icon16.png",

@@ -325,7 +325,7 @@ export default function DevAnnotator() {
       return;
     }
     const count = annotations.length;
-    let payload = `### 📌 Visual Feedback from Localhost Preview\n`;
+    let payload = `### 📌 VisualPatch Feedback from Localhost Preview\n`;
     payload += `**URL:** \`${window.location.href}\`\n`;
     payload += `**Total Items:** ${count}\n\n`;
 
@@ -773,9 +773,9 @@ export default function DevAnnotator() {
                   boxShadow: '0 0 8px #38bdf8'
                 }} />
 
-                {/* 'P' Glyph */}
+                {/* 'V' Glyph */}
                 <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>
-                  P
+                  V
                 </span>
               </div>
 
@@ -992,7 +992,7 @@ export default function DevAnnotator() {
               title="Click to expand or drag to move anywhere (Alt+T)"
             >
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-              <span>P</span>
+              <span>V</span>
               {annotations.length > 0 && (
                 <span style={{
                   background: '#0071e3',
