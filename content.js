@@ -248,11 +248,11 @@
       backdrop-filter: blur(8px);
     }
 
-    /* Marquee Area Selection Layer */
+    /* Marquee Area Selection Layer (CleanShot X / macOS Studio Grade) */
     .vp-marquee-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0, 0, 0, 0.45);
       backdrop-filter: blur(1.5px);
       -webkit-backdrop-filter: blur(1.5px);
       cursor: crosshair;
@@ -263,28 +263,33 @@
 
     .vp-marquee-box {
       position: fixed;
-      border: 2px solid #0071e3;
-      background: rgba(0, 113, 227, 0.18);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 24px rgba(0, 113, 227, 0.5);
-      border-radius: 6px;
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      background: transparent;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 99999px rgba(0, 0, 0, 0.52), 0 12px 40px rgba(0, 113, 227, 0.25);
+      border-radius: 2px;
       pointer-events: none;
       display: none;
     }
 
     .vp-marquee-dim {
       position: absolute;
-      bottom: -28px;
+      bottom: -34px;
       right: 0;
-      background: rgba(12, 14, 18, 0.94);
-      border: 1px solid rgba(0, 113, 227, 0.6);
-      border-radius: 4px;
-      color: #38bdf8;
-      font-size: 10.5px;
-      font-family: monospace;
-      font-weight: 700;
-      padding: 2px 7px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      background: rgba(10, 12, 16, 0.92);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 9999px;
+      color: #f8fafc;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      padding: 3px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* Pin Marker */
@@ -586,6 +591,16 @@
   marqueeBackdrop.className = 'vp-marquee-backdrop';
   const marqueeBox = document.createElement('div');
   marqueeBox.className = 'vp-marquee-box';
+  marqueeBox.innerHTML = `
+    <div style="position: absolute; top: -2px; left: -2px; width: 8px; height: 8px; border-top: 2.5px solid #0071e3; border-left: 2.5px solid #0071e3;"></div>
+    <div style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-top: 2.5px solid #0071e3; border-right: 2.5px solid #0071e3;"></div>
+    <div style="position: absolute; bottom: -2px; left: -2px; width: 8px; height: 8px; border-bottom: 2.5px solid #0071e3; border-left: 2.5px solid #0071e3;"></div>
+    <div style="position: absolute; bottom: -2px; right: -2px; width: 8px; height: 8px; border-bottom: 2.5px solid #0071e3; border-right: 2.5px solid #0071e3;"></div>
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; opacity: 0.6; pointer-events: none;">
+      <div style="position: absolute; top: 5px; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.75); box-shadow: 0 0 2px rgba(0,0,0,0.8);"></div>
+      <div style="position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.75); box-shadow: 0 0 2px rgba(0,0,0,0.8);"></div>
+    </div>
+  `;
   const marqueeDim = document.createElement('div');
   marqueeDim.className = 'vp-marquee-dim';
   marqueeBox.appendChild(marqueeDim);
@@ -1196,7 +1211,8 @@
     marqueeBox.style.width = `${w}px`;
     marqueeBox.style.height = `${h}px`;
 
-    marqueeDim.textContent = `${Math.round(w)} × ${Math.round(h)} px`;
+    marqueeDim.style.bottom = (y + h + 38 > window.innerHeight) ? '10px' : '-34px';
+    marqueeDim.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span><span>${Math.round(w)} × ${Math.round(h)}</span><span style="font-size: 9px; opacity: 0.6; letter-spacing: 0.04em;">PX</span>`;
   });
 
   window.addEventListener('mouseup', (e) => {

@@ -784,14 +784,14 @@ export default function DevAnnotator() {
             <span>{toastMsg}</span>
           </div>
 
-          {/* Area Screenshot Marquee Drag Backdrop & Selection Box */}
+          {/* Area Screenshot Marquee Drag Layer (CleanShot X / macOS Studio Grade) */}
           {isScreenshotMode && (
             <div
               id="vp-marquee-backdrop"
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(0, 0, 0, 0.35)',
+                background: marqueeBox && marqueeBox.width > 2 ? 'transparent' : 'rgba(0, 0, 0, 0.45)',
                 backdropFilter: 'blur(1.5px)',
                 WebkitBackdropFilter: 'blur(1.5px)',
                 cursor: 'crosshair',
@@ -807,31 +807,51 @@ export default function DevAnnotator() {
                     top: `${marqueeBox.y}px`,
                     width: `${marqueeBox.width}px`,
                     height: `${marqueeBox.height}px`,
-                    border: '2px solid #0071e3',
-                    background: 'rgba(0, 113, 227, 0.18)',
-                    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 24px rgba(0, 113, 227, 0.5)',
-                    borderRadius: '6px',
-                    pointerEvents: 'none'
+                    border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                    boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 99999px rgba(0, 0, 0, 0.52), 0 12px 40px rgba(0, 113, 227, 0.25)',
+                    borderRadius: '2px',
+                    pointerEvents: 'none',
+                    background: 'transparent'
                   }}
                 >
+                  {/* 4 Corner Viewfinder Brackets */}
+                  <div style={{ position: 'absolute', top: '-2px', left: '-2px', width: '8px', height: '8px', borderTop: '2.5px solid #0071e3', borderLeft: '2.5px solid #0071e3' }} />
+                  <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', borderTop: '2.5px solid #0071e3', borderRight: '2.5px solid #0071e3' }} />
+                  <div style={{ position: 'absolute', bottom: '-2px', left: '-2px', width: '8px', height: '8px', borderBottom: '2.5px solid #0071e3', borderLeft: '2.5px solid #0071e3' }} />
+                  <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '8px', height: '8px', borderBottom: '2.5px solid #0071e3', borderRight: '2.5px solid #0071e3' }} />
+
+                  {/* Center Alignment Crosshair */}
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '12px', height: '12px', opacity: 0.6, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', top: '5px', left: '0', right: '0', height: '1px', background: 'rgba(255,255,255,0.75)', boxShadow: '0 0 2px rgba(0,0,0,0.8)' }} />
+                    <div style={{ position: 'absolute', left: '5px', top: '0', bottom: '0', width: '1px', background: 'rgba(255,255,255,0.75)', boxShadow: '0 0 2px rgba(0,0,0,0.8)' }} />
+                  </div>
+
+                  {/* Floating Acrylic Glass Dimension Capsule */}
                   <div
                     style={{
                       position: 'absolute',
-                      bottom: '-28px',
+                      bottom: marqueeBox.y + marqueeBox.height + 38 > window.innerHeight ? '10px' : '-34px',
                       right: '0',
-                      background: 'rgba(12, 14, 18, 0.94)',
-                      border: '1px solid rgba(0, 113, 227, 0.6)',
-                      borderRadius: '4px',
-                      color: '#38bdf8',
-                      fontSize: '10.5px',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      padding: '2px 7px',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.6)',
-                      whiteSpace: 'nowrap'
+                      background: 'rgba(10, 12, 16, 0.92)',
+                      backdropFilter: 'blur(16px) saturate(180%)',
+                      WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                      border: '1px solid rgba(255, 255, 255, 0.18)',
+                      borderRadius: '9999px',
+                      color: '#f8fafc',
+                      fontSize: '11px',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontWeight: 600,
+                      padding: '3px 10px',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
                     }}
                   >
-                    {Math.round(marqueeBox.width)} × {Math.round(marqueeBox.height)} px
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
+                    <span>{Math.round(marqueeBox.width)} × {Math.round(marqueeBox.height)}</span>
+                    <span style={{ fontSize: '9px', opacity: 0.6, letterSpacing: '0.04em' }}>PX</span>
                   </div>
                 </div>
               )}
