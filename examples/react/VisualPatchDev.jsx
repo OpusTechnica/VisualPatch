@@ -297,7 +297,7 @@ export default function DevAnnotator() {
     showToast('Area Screenshot Mode · Drag a box around any region (Esc to cancel)');
 
     const handleMouseDown = (e) => {
-      if (e.target.closest('#dev-annotator-fixed-root')) return;
+      if (e.target.closest('#dev-annotator-main-toolbar')) return;
       if (e.button !== 0) return;
 
       isMarqueeDraggingRef.current = true;
@@ -1205,6 +1205,7 @@ export default function DevAnnotator() {
           {isVisible ? (
             <div
               ref={toolbarRef}
+              id="dev-annotator-main-toolbar"
               style={{
                 position: 'fixed',
                 left: position.x !== null ? `${position.x}px` : 'auto',
