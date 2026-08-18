@@ -42,9 +42,11 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 - 💎 **Linear + Apple Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
 - 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
+- 📸 **Area Screenshot Marquee Tool**: Drag a glowing blue bounding box over any element or section to capture a high-resolution screenshot attached to your feedback pin.
+- 🖼️ **In-Card Thumbnail & Lightbox**: View instant previews, click to zoom full-resolution, and download clean PNG files.
 - 📍 **True-Document Pin Anchoring**: Dropped pins stay glued to their exact document position even during smooth scrolling.
-- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, and <kbd>Esc</kbd> to toggle inspect mode.
-- 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown for your AI assistant and immediately resets pins so you never get duplicates.
+- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>Alt</kbd>+<kbd>S</kbd> for area snapshots.
+- 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown + copies the image blob directly to your clipboard for instant pasting into AI chat.
 - 🖐️ **Draggable Anywhere**: Drag the toolbar or the collapsed capsule to any corner of your screen—persists smoothly across page refreshes.
 - 🛡️ **Zero Telemetry / 100% Local**: Runs strictly on local development domains (`localhost`, `127.0.0.1`, local ports). No external servers, no tracking, zero analytics.
 
@@ -55,11 +57,12 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 | Shortcut | Action |
 | :--- | :--- |
 | <kbd>Esc</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> / <kbd>F9</kbd> | **Toggle Inspect Mode** (Drop pins on click / Exit inspect) |
-| <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>⌘</kbd> + <kbd>C</kbd> | **Copy All Feedbacks for AI** (when not selecting text) |
+| <kbd>Alt</kbd> + <kbd>S</kbd> | **Area Screenshot Marquee** (Drag box on screen to snapshot) |
+| <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>⌘</kbd> + <kbd>C</kbd> | **Copy All Feedbacks + Screenshots for AI** |
 | <kbd>Alt</kbd> + <kbd>T</kbd> or <kbd>F8</kbd> | **Toggle / Minimize Toolbar** |
 | <kbd>Enter</kbd> | **Save Pin Note** (inside feedback card) |
 | <kbd>Shift</kbd> + <kbd>Enter</kbd> | **New Line** (inside feedback card) |
-| <kbd>Esc</kbd> | **Close Feedback Card** (when typing note) |
+| <kbd>Esc</kbd> | **Close Feedback Card / Cancel Screenshot** |
 
 ---
 

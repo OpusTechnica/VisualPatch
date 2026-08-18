@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import * as htmlToImage from 'html-to-image';
 
 /**
- * DevAnnotator - Ultra-Premium Linear + Apple Inspired Visual Inspector & Annotation Tool
+ * VisualPatch - Ultra-Premium Linear + Apple Inspired Visual Inspector & Annotation Tool
  * Active only during local development (Vite dev server)
  */
 export default function DevAnnotator() {
   const [isVisible, setIsVisible] = useState(true);
   const [isInspectMode, setIsInspectMode] = useState(false);
+  const [isScreenshotMode, setIsScreenshotMode] = useState(false);
+  const [marqueeBox, setMarqueeBox] = useState(null);
+  const [zoomImage, setZoomImage] = useState(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+
   const [annotations, setAnnotations] = useState([]);
   const [activeCard, setActiveCard] = useState(null);
   const [cardText, setCardText] = useState('');
@@ -20,6 +26,8 @@ export default function DevAnnotator() {
   const toolbarRef = useRef(null);
   const highlighterRef = useRef(null);
   const hoveredElRef = useRef(null);
+  const isMarqueeDraggingRef = useRef(false);
+  const marqueeStartRef = useRef({ x: 0, y: 0 });
 
   // Mark in-app annotator active & remove any duplicate extension toolbar host
   useEffect(() => {
@@ -40,9 +48,9 @@ export default function DevAnnotator() {
   // Load annotations from localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(`aga_notes_${window.location.pathname}`);
+      const saved = localStorage.getItem(`visualpatch_notes_${window.location.pathname}`);
       if (saved) setAnnotations(JSON.parse(saved));
-      const savedPos = localStorage.getItem('aga_toolbar_pos');
+      const savedPos = localStorage.getItem('visualpatch_toolbar_pos');
       if (savedPos) setPosition(JSON.parse(savedPos));
     } catch (e) {}
   }, []);
@@ -50,7 +58,7 @@ export default function DevAnnotator() {
   const saveAnnotations = (newAnnotations) => {
     setAnnotations(newAnnotations);
     try {
-      localStorage.setItem(`aga_notes_${window.location.pathname}`, JSON.stringify(newAnnotations));
+      localStorage.setItem(`visualpatch_notes_${window.location.pathname}`, JSON.stringify(newAnnotations));
     } catch (e) {}
   };
 
@@ -78,6 +86,18 @@ export default function DevAnnotator() {
       if (isEsc) {
         e.preventDefault();
         e.stopPropagation();
+
+        if (zoomImage) {
+          setZoomImage(null);
+          return;
+        }
+
+        if (isScreenshotMode) {
+          setIsScreenshotMode(false);
+          setMarqueeBox(null);
+          showToast('Screenshot mode cancelled');
+          return;
+        }
 
         // 1. If note card is open, dismiss the card
         if (activeCard) {
@@ -111,13 +131,19 @@ export default function DevAnnotator() {
       }
       if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || e.key === 'F9') {
         e.preventDefault();
+        setIsScreenshotMode(false);
         setIsInspectMode((prev) => !prev);
+      }
+      if ((e.altKey && (e.key === 's' || e.key === 'S' || e.code === 'KeyS'))) {
+        e.preventDefault();
+        setIsInspectMode(false);
+        setIsScreenshotMode((prev) => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [activeCard]);
+  }, [activeCard, isScreenshotMode, zoomImage]);
 
   // Inspect Mode Hover & Click Handlers
   useEffect(() => {
@@ -128,10 +154,11 @@ export default function DevAnnotator() {
     }
 
     document.body.style.cursor = 'crosshair';
-    showToast('Inspect Mode Active · Click any element to drop a pin');
+    showToast('Inspect Mode Active · Click any element to drop a pin (Esc to exit)');
 
     const handleMouseMove = (e) => {
       if (e.target.closest('#dev-annotator-fixed-root') || e.target.closest('#dev-annotator-pins-root')) return;
+
       const el = e.target;
       if (!el || el === document.body || el === document.documentElement || el.id === 'root') {
         if (highlighterRef.current) highlighterRef.current.style.display = 'none';
@@ -152,7 +179,8 @@ export default function DevAnnotator() {
         highlighterRef.current.style.top = `${rect.top}px`;
         highlighterRef.current.style.width = `${rect.width}px`;
         highlighterRef.current.style.height = `${rect.height}px`;
-        const badge = highlighterRef.current.querySelector('.dev-tag-badge');
+
+        const badge = highlighterRef.current.querySelector('.highlighter-badge');
         if (badge) {
           badge.textContent = `${el.tagName.toLowerCase()} [${Math.round(rect.width)}×${Math.round(rect.height)}]`;
         }
@@ -161,6 +189,7 @@ export default function DevAnnotator() {
 
     const handleClick = (e) => {
       if (e.target.closest('#dev-annotator-fixed-root') || e.target.closest('#dev-annotator-pins-root')) return;
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -176,21 +205,23 @@ export default function DevAnnotator() {
       const selector = getCssSelector(el);
       const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
-      const newPin = {
+      const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
+      const newAnnotation = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-        number: annotations.length ? Math.max(...annotations.map((a) => a.number)) + 1 : 1,
+        number: nextNum,
         tag: el.tagName.toLowerCase(),
-        selector,
-        textSnippet,
+        selector: selector,
+        textSnippet: textSnippet,
         note: '',
-        pageX: pinX,
-        pageY: pinY,
+        x: pinX,
+        y: pinY,
+        screenshot: null,
         timestamp: new Date().toISOString()
       };
 
-      const updated = [...annotations, newPin];
+      const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
-      setActiveCard(newPin);
+      setActiveCard(newAnnotation);
     };
 
     document.addEventListener('mousemove', handleMouseMove, true);
@@ -200,10 +231,176 @@ export default function DevAnnotator() {
       document.removeEventListener('mousemove', handleMouseMove, true);
       document.removeEventListener('click', handleClick, true);
       document.body.style.cursor = 'default';
+      if (highlighterRef.current) highlighterRef.current.style.display = 'none';
     };
   }, [isInspectMode, annotations]);
 
-  // Helper: CSS Selector generator
+  // Helper: Capture Cropped Area from DOM
+  const captureAreaSnapshot = async (cropBox) => {
+    setIsCapturing(true);
+    const roots = [
+      document.getElementById('dev-annotator-fixed-root'),
+      document.getElementById('dev-annotator-pins-root'),
+      document.getElementById('visualpatch-host'),
+      document.getElementById('visualpatch-pins-layer')
+    ].filter(Boolean);
+
+    roots.forEach((r) => (r.style.visibility = 'hidden'));
+
+    try {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const scrollX = window.scrollX || 0;
+      const scrollY = window.scrollY || 0;
+
+      const canvas = await htmlToImage.toCanvas(document.body, {
+        pixelRatio: dpr,
+        filter: (node) => {
+          if (node.id && (node.id.includes('annotator') || node.id.includes('visualpatch'))) return false;
+          return true;
+        }
+      });
+
+      const sourceX = (cropBox.x + scrollX) * dpr;
+      const sourceY = (cropBox.y + scrollY) * dpr;
+      const sourceW = cropBox.width * dpr;
+      const sourceH = cropBox.height * dpr;
+
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = Math.max(1, sourceW);
+      cropCanvas.height = Math.max(1, sourceH);
+      const ctx = cropCanvas.getContext('2d');
+
+      ctx.drawImage(
+        canvas,
+        sourceX, sourceY, sourceW, sourceH,
+        0, 0, sourceW, sourceH
+      );
+
+      return cropCanvas.toDataURL('image/png', 0.92);
+    } catch (err) {
+      console.error('[VisualPatch] Screenshot capture error:', err);
+      return null;
+    } finally {
+      roots.forEach((r) => (r.style.visibility = 'visible'));
+      setIsCapturing(false);
+    }
+  };
+
+  // Area Screenshot Marquee Mode Handlers
+  useEffect(() => {
+    if (!isScreenshotMode) {
+      setMarqueeBox(null);
+      isMarqueeDraggingRef.current = false;
+      return;
+    }
+
+    showToast('Area Screenshot Mode · Drag a box around any region (Esc to cancel)');
+
+    const handleMouseDown = (e) => {
+      if (e.target.closest('#dev-annotator-fixed-root')) return;
+      if (e.button !== 0) return;
+
+      isMarqueeDraggingRef.current = true;
+      marqueeStartRef.current = { x: e.clientX, y: e.clientY };
+      setMarqueeBox({
+        startX: e.clientX,
+        startY: e.clientY,
+        currentX: e.clientX,
+        currentY: e.clientY,
+        x: e.clientX,
+        y: e.clientY,
+        width: 0,
+        height: 0
+      });
+      e.preventDefault();
+    };
+
+    const handleMouseMove = (e) => {
+      if (!isMarqueeDraggingRef.current) return;
+
+      const startX = marqueeStartRef.current.x;
+      const startY = marqueeStartRef.current.y;
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+
+      setMarqueeBox({ startX, startY, currentX, currentY, x, y, width, height });
+    };
+
+    const handleMouseUp = async (e) => {
+      if (!isMarqueeDraggingRef.current) return;
+      isMarqueeDraggingRef.current = false;
+
+      const startX = marqueeStartRef.current.x;
+      const startY = marqueeStartRef.current.y;
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+
+      if (width < 15 || height < 15) {
+        setMarqueeBox(null);
+        return;
+      }
+
+      const cropRect = { x, y, width, height };
+      setMarqueeBox(null);
+      setIsScreenshotMode(false);
+
+      showToast('Capturing area screenshot...');
+      const screenshotDataUrl = await captureAreaSnapshot(cropRect);
+
+      // Detect element underneath the box center
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+      const el = document.elementFromPoint(centerX, centerY) || document.body;
+      const selector = getCssSelector(el);
+      const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
+
+      const scrollX = window.scrollX || window.pageXOffset || 0;
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const pinX = Math.round(x + scrollX + 16);
+      const pinY = Math.round(y + scrollY + 16);
+
+      const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
+      const newAnnotation = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        number: nextNum,
+        tag: el.tagName ? el.tagName.toLowerCase() : 'area',
+        selector: selector || `area[${width}x${height}]`,
+        textSnippet: textSnippet,
+        note: '',
+        x: pinX,
+        y: pinY,
+        screenshot: screenshotDataUrl,
+        timestamp: new Date().toISOString()
+      };
+
+      const updated = [...annotations, newAnnotation];
+      saveAnnotations(updated);
+      setActiveCard(newAnnotation);
+      showToast(`📸 Captured area screenshot (#${nextNum})`);
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isScreenshotMode, annotations]);
+
+  // Helper: Get unique CSS selector
   const getCssSelector = (el) => {
     if (!(el instanceof Element)) return '';
     const path = [];
@@ -220,7 +417,11 @@ export default function DevAnnotator() {
           if (sibling.nodeName.toLowerCase() === selector) nth++;
         }
         if (el.className && typeof el.className === 'string') {
-          const classes = el.className.trim().split(/\s+/).filter((c) => c && !c.startsWith('dev-')).slice(0, 2);
+          const classes = el.className
+            .trim()
+            .split(/\s+/)
+            .filter((c) => c && !c.startsWith('dev-annotator') && !c.startsWith('vp-'))
+            .slice(0, 2);
           if (classes.length) selector += `.${classes.join('.')}`;
         }
         if (nth !== 1) selector += `:nth-of-type(${nth})`;
@@ -232,13 +433,24 @@ export default function DevAnnotator() {
     return path.join(' > ');
   };
 
-  const pillRef = useRef(null);
+  // Helper: Convert data URL to Blob for Clipboard API
+  const dataURLtoBlob = (dataurl) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  };
 
-  // Drag Handlers for Toolbar
+  // Dragging Toolbar Handlers
   const handleMouseDown = (e) => {
     if (e.button !== 0) return;
     isDraggingRef.current = true;
-    const rect = toolbarRef.current ? toolbarRef.current.getBoundingClientRect() : { left: position.x || 0, top: position.y || 0, width: 220, height: 38 };
+    const rect = toolbarRef.current.getBoundingClientRect();
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -250,23 +462,23 @@ export default function DevAnnotator() {
       if (!isDraggingRef.current) return;
       const deltaX = moveEvent.clientX - dragStartRef.current.x;
       const deltaY = moveEvent.clientY - dragStartRef.current.y;
-      const maxX = window.innerWidth - rect.width - 8;
-      const maxY = window.innerHeight - rect.height - 8;
+
+      const rectEl = toolbarRef.current.getBoundingClientRect();
+      const maxX = window.innerWidth - rectEl.width - 8;
+      const maxY = window.innerHeight - rectEl.height - 8;
+
       const newX = Math.max(8, Math.min(dragStartRef.current.initialX + deltaX, maxX));
       const newY = Math.max(8, Math.min(dragStartRef.current.initialY + deltaY, maxY));
+
       setPosition({ x: newX, y: newY });
+      try {
+        localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify({ x: newX, y: newY }));
+      } catch (err) {}
     };
 
     const handleMouseUp = () => {
       isDraggingRef.current = false;
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (toolbarRef.current) {
-        const r = toolbarRef.current.getBoundingClientRect();
-        try {
-          localStorage.setItem('aga_toolbar_pos', JSON.stringify({ x: r.left, y: r.top }));
-        } catch (err) {}
-      }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -274,13 +486,14 @@ export default function DevAnnotator() {
     e.preventDefault();
   };
 
-  // Drag & Click Handler for Collapsed Pill
+  // Dragging Collapsed Pill Handler
+  const pillRef = useRef(null);
   const handlePillMouseDown = (e) => {
     if (e.button !== 0) return;
     let hasMoved = false;
     const startX = e.clientX;
     const startY = e.clientY;
-    const rect = pillRef.current ? pillRef.current.getBoundingClientRect() : { left: position.x || 0, top: position.y || 0, width: 80, height: 32 };
+    const rect = pillRef.current.getBoundingClientRect();
     const initX = rect.left;
     const initY = rect.top;
 
@@ -290,25 +503,23 @@ export default function DevAnnotator() {
         hasMoved = true;
         const deltaX = moveEvent.clientX - startX;
         const deltaY = moveEvent.clientY - startY;
+
         const maxX = window.innerWidth - rect.width - 8;
         const maxY = window.innerHeight - rect.height - 8;
+
         const newX = Math.max(8, Math.min(initX + deltaX, maxX));
         const newY = Math.max(8, Math.min(initY + deltaY, maxY));
+
         setPosition({ x: newX, y: newY });
+        try {
+          localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify({ x: newX, y: newY }));
+        } catch (err) {}
       }
     };
 
     const handleMouseUp = () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (hasMoved) {
-        if (pillRef.current) {
-          const r = pillRef.current.getBoundingClientRect();
-          try {
-            localStorage.setItem('aga_toolbar_pos', JSON.stringify({ x: r.left, y: r.top }));
-          } catch (err) {}
-        }
-      } else {
+      if (!hasMoved) {
         setIsVisible(true);
       }
     };
@@ -318,10 +529,10 @@ export default function DevAnnotator() {
     e.preventDefault();
   };
 
-  // Copy structured markdown for AI & auto-clear to prevent duplication
-  const copyForAI = () => {
+  // Copy structured markdown & attached screenshot for AI & auto-clear
+  const copyForAI = async () => {
     if (!annotations.length) {
-      showToast('No annotations yet · Drop pins first');
+      showToast('No annotations yet · Drop pins or capture areas first');
       return;
     }
     const count = annotations.length;
@@ -329,25 +540,56 @@ export default function DevAnnotator() {
     payload += `**URL:** \`${window.location.href}\`\n`;
     payload += `**Total Items:** ${count}\n\n`;
 
+    let hasScreenshots = false;
+    let firstScreenshotBlob = null;
+
     annotations.forEach((item, index) => {
-      payload += `#### ${index + 1}. Element: \`${item.selector}\`\n`;
+      payload += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
       if (item.textSnippet) payload += `- **Current Content:** "${item.textSnippet}"\n`;
       payload += `- **Requested Change:** ${item.note || 'No specific note added'}\n\n`;
+
+      if (item.screenshot && !firstScreenshotBlob) {
+        try {
+          firstScreenshotBlob = dataURLtoBlob(item.screenshot);
+          hasScreenshots = true;
+        } catch (e) {}
+      }
     });
 
-    navigator.clipboard.writeText(payload).then(() => {
-      saveAnnotations([]);
-      setActiveCard(null);
-      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
-    }).catch(() => {
-      saveAnnotations([]);
-      setActiveCard(null);
-      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
-    });
+    try {
+      // Try writing both text and image blob if supported by browser
+      if (hasScreenshots && firstScreenshotBlob && navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([payload], { type: 'text/plain' }),
+            'image/png': firstScreenshotBlob
+          })
+        ]);
+        saveAnnotations([]);
+        setActiveCard(null);
+        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''} (+ screenshot) for AI!`);
+        return;
+      }
+    } catch (err) {
+      // Fallback to text copy
+    }
+
+    navigator.clipboard
+      .writeText(payload)
+      .then(() => {
+        saveAnnotations([]);
+        setActiveCard(null);
+        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
+      })
+      .catch(() => {
+        saveAnnotations([]);
+        setActiveCard(null);
+        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
+      });
   };
   copyForAIRef.current = copyForAI;
 
-  // Immediate 1-click clear (no redundant confirmation dialogs)
+  // Immediate 1-click clear
   const clearAll = () => {
     if (annotations.length) {
       saveAnnotations([]);
@@ -359,60 +601,70 @@ export default function DevAnnotator() {
   if (typeof document === 'undefined') return null;
 
   // Calculate card position on screen
-  const scrollX = typeof window !== 'undefined' ? (window.scrollX || window.pageXOffset || 0) : 0;
-  const scrollY = typeof window !== 'undefined' ? (window.scrollY || window.pageYOffset || 0) : 0;
-
-  const cardViewportX = activeCard ? activeCard.pageX - scrollX : 0;
-  const cardViewportY = activeCard ? activeCard.pageY - scrollY : 0;
-
-  const cardLeft = activeCard ? Math.min(Math.max(cardViewportX + 16, 20), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 360) : 0;
-  const cardTop = activeCard ? Math.min(Math.max(cardViewportY - 20, 20), (typeof window !== 'undefined' ? window.innerHeight : 800) - 280) : 0;
+  let cardX = 20;
+  let cardY = 20;
+  if (activeCard) {
+    const scrollX = window.scrollX || 0;
+    const scrollY = window.scrollY || 0;
+    cardX = Math.min(Math.max(activeCard.x - scrollX + 16, 20), window.innerWidth - 360);
+    cardY = Math.min(Math.max(activeCard.y - scrollY - 20, 20), window.innerHeight - 380);
+  }
 
   return (
     <>
-      {/* 1. Absolute Document Layer for Pins (Scrolls perfectly with webpage) */}
+      {/* 1. Global Document Pin Anchors (True Absolute Scroll Tracking) */}
       {createPortal(
-        <div id="dev-annotator-pins-root" style={{ position: 'absolute', top: 0, left: 0, width: '100%', pointerEvents: 'none', zIndex: 2147483640 }}>
+        <div
+          id="dev-annotator-pins-root"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            pointerEvents: 'none',
+            zIndex: 2147483640
+          }}
+        >
           {annotations.map((item) => (
             <div
               key={item.id}
               onClick={(e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 setActiveCard(item);
               }}
               style={{
                 position: 'absolute',
-                left: `${item.pageX}px`,
-                top: `${item.pageY}px`,
+                left: `${item.x}px`,
+                top: `${item.y}px`,
+                transform: 'translate(-50%, -50%)',
                 width: '26px',
                 height: '26px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
+                background: item.screenshot
+                  ? 'linear-gradient(135deg, #38bdf8 0%, #0071e3 100%)'
+                  : 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '12px',
                 fontWeight: 700,
-                fontFamily: 'var(--font-sans, -apple-system, sans-serif)',
-                boxShadow: '0 4px 16px rgba(0, 113, 227, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(0, 113, 227, 0.25)',
+                boxShadow: item.screenshot
+                  ? '0 4px 16px rgba(56, 189, 248, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(56, 189, 248, 0.3)'
+                  : '0 4px 16px rgba(0, 113, 227, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(0, 113, 227, 0.25)',
                 cursor: 'pointer',
-                zIndex: 2147483642,
-                transform: 'translate(-50%, -50%)',
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease'
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease',
+                zIndex: 2147483642
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.15)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 113, 227, 0.7), 0 0 0 2px #ffffff, 0 0 0 5px rgba(0, 113, 227, 0.4)';
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.18)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 113, 227, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(0, 113, 227, 0.25)';
               }}
-              title={`Pin #${item.number}: ${item.note || 'Click to view/edit note'}`}
+              title={`Pin #${item.number}${item.screenshot ? ' (📸 Screenshot Attached)' : ''}: ${item.note || 'Click to edit'}`}
             >
               {item.number}
             </div>
@@ -421,26 +673,193 @@ export default function DevAnnotator() {
         document.body
       )}
 
-      {/* 2. Fixed Viewport Layer for Highlighter, Note Card, and Toolbar */}
+      {/* 2. Fixed Overlay Root for Highlighter, Floating Toolbar, Modal Card & Toasts */}
       {createPortal(
-        <div id="dev-annotator-fixed-root" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: 0, zIndex: 2147483645, pointerEvents: 'none' }}>
-          {/* Precision Fixed Highlighter Box */}
+        <div
+          id="dev-annotator-fixed-root"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            pointerEvents: 'none',
+            zIndex: 2147483646,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif'
+          }}
+        >
+          {/* Subtle Top Notification Toast */}
+          <div
+            style={{
+              position: 'fixed',
+              top: '24px',
+              left: '50%',
+              transform: toastMsg ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(-10px)',
+              opacity: toastMsg ? 1 : 0,
+              background: 'rgba(12, 14, 18, 0.94)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              padding: '7px 16px',
+              borderRadius: '9999px',
+              fontSize: '12px',
+              fontWeight: 600,
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 113, 227, 0.3)',
+              zIndex: 2147483647,
+              pointerEvents: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
+            <span>{toastMsg}</span>
+          </div>
+
+          {/* Area Screenshot Marquee Drag Backdrop & Selection Box */}
+          {isScreenshotMode && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.35)',
+                backdropFilter: 'blur(1.5px)',
+                WebkitBackdropFilter: 'blur(1.5px)',
+                cursor: 'crosshair',
+                pointerEvents: 'auto',
+                zIndex: 2147483644
+              }}
+            >
+              {marqueeBox && marqueeBox.width > 2 && marqueeBox.height > 2 && (
+                <div
+                  style={{
+                    position: 'fixed',
+                    left: `${marqueeBox.x}px`,
+                    top: `${marqueeBox.y}px`,
+                    width: `${marqueeBox.width}px`,
+                    height: `${marqueeBox.height}px`,
+                    border: '2px solid #0071e3',
+                    background: 'rgba(0, 113, 227, 0.18)',
+                    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 24px rgba(0, 113, 227, 0.5)',
+                    borderRadius: '6px',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '-28px',
+                      right: '0',
+                      background: 'rgba(12, 14, 18, 0.94)',
+                      border: '1px solid rgba(0, 113, 227, 0.6)',
+                      borderRadius: '4px',
+                      color: '#38bdf8',
+                      fontSize: '10.5px',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      padding: '2px 7px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.6)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {Math.round(marqueeBox.width)} × {Math.round(marqueeBox.height)} px
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Full Screen Image Zoom Modal */}
+          {zoomImage && (
+            <div
+              onClick={() => setZoomImage(null)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.88)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                zIndex: 2147483649,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'auto',
+                cursor: 'zoom-out',
+                padding: '24px'
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'relative',
+                  maxWidth: '92vw',
+                  maxHeight: '90vh',
+                  background: '#0f1115',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  boxShadow: '0 32px 64px rgba(0, 0, 0, 0.9), 0 0 32px rgba(0, 113, 227, 0.3)'
+                }}
+              >
+                <img
+                  src={zoomImage}
+                  alt="Area Screenshot Preview"
+                  style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '80vh',
+                    objectFit: 'contain'
+                  }}
+                />
+                <div
+                  style={{
+                    padding: '10px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'rgba(12, 14, 18, 0.95)'
+                  }}
+                >
+                  <span style={{ fontSize: '11.5px', color: '#94a3b8', fontFamily: 'monospace' }}>Area Screenshot Preview</span>
+                  <button
+                    onClick={() => setZoomImage(null)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: '#ffffff',
+                      fontSize: '11.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Close (Esc)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Hover Precision Highlighter Frame */}
           <div
             ref={highlighterRef}
             style={{
               position: 'fixed',
+              display: 'none',
               border: '2px solid #0071e3',
               background: 'transparent',
               boxShadow: '0 0 0 1px rgba(0, 113, 227, 0.45), inset 0 0 0 1px rgba(0, 113, 227, 0.25)',
               borderRadius: '6px',
               pointerEvents: 'none',
               zIndex: 2147483640,
-              display: 'none',
               transition: 'all 0.05s ease'
             }}
           >
-            <span
-              className="dev-tag-badge"
+            <div
+              className="highlighter-badge"
               style={{
                 position: 'absolute',
                 top: '-24px',
@@ -454,23 +873,24 @@ export default function DevAnnotator() {
                 padding: '2px 7px',
                 borderRadius: '4px',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                pointerEvents: 'none',
                 backdropFilter: 'blur(8px)'
               }}
             />
           </div>
 
-          {/* Contextual Annotation Card Popup — High-End Linear / Apple Glass Aesthetic */}
+          {/* Linear / Apple Frosted Glass Note Card */}
           {activeCard && (
             <div
-              onClick={(e) => e.stopPropagation()}
               style={{
                 position: 'fixed',
-                left: `${cardLeft}px`,
-                top: `${cardTop}px`,
+                left: `${cardX}px`,
+                top: `${cardY}px`,
                 width: '345px',
                 background: 'rgba(14, 16, 20, 0.96)',
                 backdropFilter: 'blur(28px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
                 border: '1px solid rgba(255, 255, 255, 0.16)',
                 borderRadius: '16px',
                 boxShadow: '0 28px 56px -10px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 24px rgba(0, 113, 227, 0.22)',
@@ -479,17 +899,15 @@ export default function DevAnnotator() {
                 zIndex: 2147483648,
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                animation: 'agaFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                animation: 'popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             >
-              {/* Header Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {/* Pin Number Capsule */}
-                  <span style={{ 
+                  <span style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
                     gap: '4px',
                     padding: '2px 8px',
                     borderRadius: '9999px',
@@ -504,14 +922,11 @@ export default function DevAnnotator() {
                     <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
                     PIN {activeCard.number < 10 ? `0${activeCard.number}` : activeCard.number}
                   </span>
-
-                  {/* Element Tag */}
                   <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>
                     &lt;{activeCard.tag}&gt;
                   </span>
                 </div>
 
-                {/* Dismiss Button */}
                 <button
                   onClick={() => setActiveCard(null)}
                   style={{
@@ -544,11 +959,11 @@ export default function DevAnnotator() {
                 </button>
               </div>
 
-              {/* Element Text / Selector Inset Preview */}
+              {/* Selector / Snippet Preview */}
               <div style={{
                 fontSize: '11.5px',
                 color: '#cbd5e1',
-                marginBottom: '12px',
+                marginBottom: activeCard.screenshot ? '8px' : '12px',
                 background: 'rgba(0, 0, 0, 0.4)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 padding: '7px 10px',
@@ -562,6 +977,80 @@ export default function DevAnnotator() {
                 {activeCard.textSnippet ? `"${activeCard.textSnippet}"` : activeCard.selector}
               </div>
 
+              {/* Screenshot Thumbnail Preview if Available */}
+              {activeCard.screenshot && (
+                <div
+                  style={{
+                    position: 'relative',
+                    marginBottom: '12px',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(0, 113, 227, 0.4)',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)'
+                  }}
+                >
+                  <img
+                    src={activeCard.screenshot}
+                    alt="Captured Area"
+                    style={{
+                      width: '100%',
+                      height: '110px',
+                      objectFit: 'cover',
+                      display: 'block',
+                      cursor: 'zoom-in'
+                    }}
+                    onClick={() => setZoomImage(activeCard.screenshot)}
+                    title="Click to view full resolution"
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '6px',
+                      display: 'flex',
+                      gap: '4px'
+                    }}
+                  >
+                    <button
+                      onClick={() => setZoomImage(activeCard.screenshot)}
+                      style={{
+                        padding: '3px 7px',
+                        borderRadius: '5px',
+                        background: 'rgba(12, 14, 18, 0.85)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#ffffff',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                      title="Zoom full image"
+                    >
+                      🔍 Zoom
+                    </button>
+                    <a
+                      href={activeCard.screenshot}
+                      download={`visualpatch-pin-${activeCard.number}.png`}
+                      style={{
+                        padding: '3px 7px',
+                        borderRadius: '5px',
+                        background: 'rgba(12, 14, 18, 0.85)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#38bdf8',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                      title="Download PNG"
+                    >
+                      💾 PNG
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Textarea Input */}
               <textarea
                 ref={textareaRef}
@@ -570,14 +1059,14 @@ export default function DevAnnotator() {
                 placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)"
                 style={{
                   width: '100%',
-                  height: '80px',
+                  height: '76px',
                   background: 'rgba(0, 0, 0, 0.55)',
                   border: '1px solid rgba(255, 255, 255, 0.14)',
                   borderRadius: '10px',
                   color: '#ffffff',
                   padding: '10px 12px',
                   fontSize: '13px',
-                  fontFamily: 'var(--font-sans, -apple-system, sans-serif)',
+                  fontFamily: 'inherit',
                   lineHeight: '1.45',
                   resize: 'vertical',
                   outline: 'none',
@@ -596,24 +1085,21 @@ export default function DevAnnotator() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    const note = cardText.trim();
-                    const updated = annotations.map((a) => (a.id === activeCard.id ? { ...a, note } : a));
+                    const updated = annotations.map((item) =>
+                      item.id === activeCard.id ? { ...item, note: cardText.trim() } : item
+                    );
                     saveAnnotations(updated);
                     setActiveCard(null);
                     showToast(`Saved Pin #${activeCard.number}`);
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setActiveCard(null);
                   }
                 }}
               />
 
-              {/* Bottom Actions Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {/* Delete Button */}
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <button
                   onClick={() => {
-                    const updated = annotations.filter((a) => a.id !== activeCard.id);
+                    const updated = annotations.filter((item) => item.id !== activeCard.id);
                     saveAnnotations(updated);
                     setActiveCard(null);
                     showToast(`Deleted Pin #${activeCard.number}`);
@@ -640,7 +1126,6 @@ export default function DevAnnotator() {
                     e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
                     e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
                   }}
-                  title="Delete this pin"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -650,30 +1135,36 @@ export default function DevAnnotator() {
                 </button>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {/* Cancel */}
                   <button
                     onClick={() => setActiveCard(null)}
                     style={{
                       padding: '6px 11px',
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      background: 'none',
-                      color: '#94a3b8',
-                      fontSize: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#cbd5e1',
+                      fontSize: '11.5px',
+                      fontWeight: 500,
                       cursor: 'pointer',
-                      transition: 'color 0.15s ease'
+                      transition: 'all 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = '#ffffff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = '#cbd5e1';
+                    }}
                   >
                     Cancel
                   </button>
 
-                  {/* Save Pin Primary CTA */}
                   <button
                     onClick={() => {
-                      const note = cardText.trim();
-                      const updated = annotations.map((a) => (a.id === activeCard.id ? { ...a, note } : a));
+                      const updated = annotations.map((item) =>
+                        item.id === activeCard.id ? { ...item, note: cardText.trim() } : item
+                      );
                       saveAnnotations(updated);
                       setActiveCard(null);
                       showToast(`Saved Pin #${activeCard.number}`);
@@ -710,7 +1201,7 @@ export default function DevAnnotator() {
             </div>
           )}
 
-          {/* Floating Ultra-Premium Toolbar (Linear + Apple Dynamic Island Style) */}
+          {/* 3. Floating Bottom Toolbar (Linear + Apple Obsidian Acrylic Glass Dock) */}
           {isVisible ? (
             <div
               ref={toolbarRef}
@@ -727,6 +1218,7 @@ export default function DevAnnotator() {
                 padding: '4px 6px',
                 background: 'rgba(12, 14, 18, 0.92)',
                 backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                 border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: '9999px',
                 boxShadow: '0 16px 40px -6px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.18)',
@@ -736,7 +1228,7 @@ export default function DevAnnotator() {
                 transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
               }}
             >
-              {/* Drag Grip & Brand Mark (Compact 'A') */}
+              {/* Drag Grip & Brand Mark (Compact 'V') */}
               <div
                 onMouseDown={handleMouseDown}
                 style={{
@@ -750,11 +1242,10 @@ export default function DevAnnotator() {
                   cursor: 'grab',
                   transition: 'background-color 0.15s ease'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.09)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.09)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
                 title="Drag to reposition toolbar anywhere"
               >
-                {/* Grip dots */}
                 <svg width="8" height="12" viewBox="0 0 8 12" fill="none" opacity="0.65">
                   <circle cx="2" cy="2" r="1" fill="#ffffff" />
                   <circle cx="6" cy="2" r="1" fill="#ffffff" />
@@ -764,27 +1255,18 @@ export default function DevAnnotator() {
                   <circle cx="6" cy="10" r="1" fill="#ffffff" />
                 </svg>
 
-                {/* Pulse Glow Dot */}
-                <span style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#38bdf8',
-                  boxShadow: '0 0 8px #38bdf8'
-                }} />
-
-                {/* 'V' Glyph */}
-                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>
-                  V
-                </span>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>V</span>
               </div>
 
-              {/* Vertical Hairline Divider */}
               <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 2px' }} />
 
-              {/* 1. Inspect / Target Icon Button (Crosshair / Target) */}
+              {/* 1. Inspect Mode Crosshair Button */}
               <button
-                onClick={() => setIsInspectMode((prev) => !prev)}
+                onClick={() => {
+                  setIsScreenshotMode(false);
+                  setIsInspectMode(!isInspectMode);
+                }}
                 style={{
                   width: '30px',
                   height: '30px',
@@ -813,7 +1295,7 @@ export default function DevAnnotator() {
                     e.currentTarget.style.color = '#cbd5e1';
                   }
                 }}
-                title={isInspectMode ? 'Inspect Active · Click element to pin (Alt+D)' : 'Inspect & Drop Pin (Alt+D)'}
+                title={isInspectMode ? 'Inspect Active · Click element to pin (Esc / Alt+D)' : 'Inspect & Drop Pin (Esc / Alt+D)'}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -825,7 +1307,49 @@ export default function DevAnnotator() {
                 </svg>
               </button>
 
-              {/* 2. Copy for AI Icon Button (Recognizable Dual-Sheet Copy Icon + Dynamic Badge) */}
+              {/* 2. Area Screenshot Marquee Tool Button (Option 2) */}
+              <button
+                onClick={() => {
+                  setIsInspectMode(false);
+                  setIsScreenshotMode(!isScreenshotMode);
+                }}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  border: isScreenshotMode ? '1px solid #0071e3' : '1px solid transparent',
+                  background: isScreenshotMode ? 'rgba(0, 113, 227, 0.28)' : 'rgba(255, 255, 255, 0.04)',
+                  color: isScreenshotMode ? '#38bdf8' : '#cbd5e1',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: isScreenshotMode ? '0 0 12px rgba(0, 113, 227, 0.45)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                  if (!isScreenshotMode) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.color = '#ffffff';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  if (!isScreenshotMode) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    e.currentTarget.style.color = '#cbd5e1';
+                  }
+                }}
+                title={isScreenshotMode ? 'Area Screenshot Active · Drag box on screen (Alt+S)' : 'Take Area Screenshot (Alt+S)'}
+              >
+                <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" fill={isScreenshotMode ? 'currentColor' : 'none'} />
+                </svg>
+              </button>
+
+              {/* 3. Copy for AI Icon Button (Dual-Sheet Copy Icon + Dynamic Badge) */}
               <button
                 onClick={copyForAI}
                 style={{
@@ -857,13 +1381,11 @@ export default function DevAnnotator() {
                 }}
                 title={`Copy ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} for AI (Ctrl+C)`}
               >
-                {/* Standard Dual-Sheet Clipboard Copy Icon */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
 
-                {/* Floating Micro Pin Counter Badge */}
                 {annotations.length > 0 && (
                   <span
                     style={{
@@ -881,8 +1403,7 @@ export default function DevAnnotator() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
-                      animation: 'agaBadgePop 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
                     }}
                   >
                     {annotations.length}
@@ -890,29 +1411,31 @@ export default function DevAnnotator() {
                 )}
               </button>
 
-              {/* 3. Clear All Icon Button (Trash) */}
+              {/* 4. Clear All Pins Button */}
               <button
                 onClick={clearAll}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '50%',
                   border: '1px solid transparent',
-                  background: 'none',
-                  color: '#94a3b8',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  color: '#cbd5e1',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
                   e.currentTarget.style.color = '#f87171';
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#94a3b8';
-                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                  e.currentTarget.style.color = '#cbd5e1';
                 }}
                 title="Clear all pins on this page"
               >
@@ -922,31 +1445,31 @@ export default function DevAnnotator() {
                 </svg>
               </button>
 
-              {/* 4. Minimize / Hide Icon Button (X) */}
+              {/* 5. Minimize / Hide Icon */}
               <button
                 onClick={() => setIsVisible(false)}
                 style={{
-                  width: '26px',
-                  height: '26px',
+                  width: '28px',
+                  height: '28px',
                   borderRadius: '50%',
                   border: '1px solid transparent',
-                  background: 'none',
-                  color: '#64748b',
+                  background: 'transparent',
+                  color: '#94a3b8',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.08)';
                   e.currentTarget.style.color = '#ffffff';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#64748b';
-                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.color = '#94a3b8';
                 }}
-                title="Hide toolbar (Alt+T to unhide)"
+                title="Minimize toolbar (Alt+T)"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -955,7 +1478,7 @@ export default function DevAnnotator() {
               </button>
             </div>
           ) : (
-            /* Minimized Apple / Linear Style Dynamic Island Capsule (Draggable & Keeps Current Corner) */
+            /* Minimized Capsule */
             <div
               ref={pillRef}
               onMouseDown={handlePillMouseDown}
@@ -994,67 +1517,25 @@ export default function DevAnnotator() {
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
               <span>V</span>
               {annotations.length > 0 && (
-                <span style={{
-                  background: '#0071e3',
-                  color: '#ffffff',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  padding: '1px 6px',
-                  borderRadius: '9999px'
-                }}>
+                <span
+                  style={{
+                    background: '#0071e3',
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    borderRadius: '9999px',
+                    padding: '0 5px',
+                    marginLeft: '2px'
+                  }}
+                >
                   {annotations.length}
                 </span>
               )}
             </div>
           )}
-
-          {/* Toast Notification — Apple Dynamic Pill */}
-          {toastMsg && (
-            <div
-              style={{
-                position: 'fixed',
-                top: '24px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(12, 14, 18, 0.94)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#ffffff',
-                padding: '7px 16px',
-                borderRadius: '9999px',
-                fontSize: '12px',
-                fontWeight: 600,
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 113, 227, 0.3)',
-                zIndex: 2147483647,
-                pointerEvents: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '7px',
-                animation: 'agaToastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
-              <span>{toastMsg}</span>
-            </div>
-          )}
         </div>,
         document.body
       )}
-
-      <style>{`
-        @keyframes agaFadeIn {
-          from { opacity: 0; transform: scale(0.96) translateY(6px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes agaBadgePop {
-          from { transform: scale(0); }
-          to { transform: scale(1); }
-        }
-        @keyframes agaToastIn {
-          from { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
-          to { opacity: 1; transform: translate(-50%, 0) scale(1); }
-        }
-      `}</style>
     </>
   );
 }
