@@ -745,6 +745,7 @@ export default function DevAnnotator() {
           {/* Area Screenshot Marquee Drag Backdrop & Selection Box */}
           {isScreenshotMode && (
             <div
+              id="vp-marquee-backdrop"
               style={{
                 position: 'fixed',
                 inset: 0,
