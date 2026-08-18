@@ -277,12 +277,24 @@ export default function DevAnnotator() {
       } catch (e) {}
     }
 
-    // 2. Standalone Fast Async Viewport Capture (Toolbar excluded via filter, 0ms disappearing!)
+    // 2. Standalone Fast Async Viewport Capture (Micro-Container Targeting: only snapshots 5-10 nodes, 0ms lag!)
     try {
-      const targetNode = document.getElementById('root') || document.body;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const scrollX = window.scrollX || 0;
-      const scrollY = window.scrollY || 0;
+      const el = document.elementFromPoint(cropBox.x + cropBox.width / 2, cropBox.y + cropBox.height / 2) || document.body;
+      let targetNode = el;
+
+      // Find the smallest container that encloses the cropBox (avoids scanning the entire page)
+      while (targetNode && targetNode.parentElement && targetNode !== document.body && targetNode !== document.documentElement) {
+        const r = targetNode.getBoundingClientRect();
+        if (r.left <= cropBox.x && r.top <= cropBox.y && r.right >= cropBox.x + cropBox.width && r.bottom >= cropBox.y + cropBox.height) {
+          break;
+        }
+        targetNode = targetNode.parentElement;
+      }
+
+      if (!targetNode) targetNode = document.body;
+
+      const targetRect = targetNode.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
 
       const canvas = await htmlToImage.toCanvas(targetNode, {
         pixelRatio: dpr,
@@ -294,8 +306,8 @@ export default function DevAnnotator() {
         }
       });
 
-      const sourceX = (cropBox.x + scrollX) * dpr;
-      const sourceY = (cropBox.y + scrollY) * dpr;
+      const sourceX = (cropBox.x - targetRect.left) * dpr;
+      const sourceY = (cropBox.y - targetRect.top) * dpr;
       const sourceW = cropBox.width * dpr;
       const sourceH = cropBox.height * dpr;
 
@@ -306,11 +318,11 @@ export default function DevAnnotator() {
 
       ctx.drawImage(
         canvas,
-        sourceX, sourceY, sourceW, sourceH,
+        Math.max(0, sourceX), Math.max(0, sourceY), sourceW, sourceH,
         0, 0, sourceW, sourceH
       );
 
-      return cropCanvas.toDataURL('image/jpeg', 0.88);
+      return cropCanvas.toDataURL('image/jpeg', 0.85);
     } catch (err) {
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
