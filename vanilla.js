@@ -953,12 +953,16 @@
       document.getElementById('dev-annotator-pins-root')
     ].filter(Boolean);
 
-    roots.forEach(r => r.style.visibility = 'hidden');
+    // Ensure elements are unhidden in at most 60ms even if extension message is pending
+    const timer = setTimeout(() => {
+      roots.forEach(r => r.style.visibility = 'visible');
+    }, 60);
 
     return new Promise((resolve) => {
       try {
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.id && chrome.runtime?.sendMessage) {
           chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+            clearTimeout(timer);
             roots.forEach(r => r.style.visibility = 'visible');
 
             if (!response || !response.success || !response.dataUrl) {
@@ -988,10 +992,12 @@
             img.src = response.dataUrl;
           });
         } else {
+          clearTimeout(timer);
           roots.forEach(r => r.style.visibility = 'visible');
           resolve(null);
         }
       } catch (err) {
+        clearTimeout(timer);
         roots.forEach(r => r.style.visibility = 'visible');
         resolve(null);
       }

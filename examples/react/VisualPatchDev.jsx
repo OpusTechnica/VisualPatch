@@ -235,25 +235,21 @@ export default function DevAnnotator() {
     };
   }, [isInspectMode, annotations]);
 
-  // Fast, lag-free screenshot capture (Native GPU capture if extension present, else fast async snapshot)
+  // Fast, lag-free screenshot capture
   const captureAreaSnapshot = async (cropBox) => {
-    const roots = [
-      document.getElementById('dev-annotator-fixed-root'),
-      document.getElementById('dev-annotator-pins-root'),
-      document.getElementById('visualpatch-host'),
-      document.getElementById('visualpatch-pins-layer')
-    ].filter(Boolean);
-
-    roots.forEach((r) => (r.style.visibility = 'hidden'));
-
-    // Check if running inside extension with native Chromium GPU capture
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+    // 1. Try Native GPU Tab Capture if running inside Chrome/Edge Extension context
+    const isExtension = typeof chrome !== 'undefined' && Boolean(chrome.runtime?.id);
+    if (isExtension && chrome.runtime?.sendMessage) {
       try {
-        const res = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
-            resolve(response);
-          });
-        });
+        const res = await Promise.race([
+          new Promise((resolve) => {
+            chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+              if (chrome.runtime.lastError) resolve(null);
+              else resolve(response);
+            });
+          }),
+          new Promise((resolve) => setTimeout(() => resolve(null), 150)) // Fast 150ms timeout
+        ]);
 
         if (res && res.success && res.dataUrl) {
           const dpr = window.devicePixelRatio || 1;
@@ -276,12 +272,12 @@ export default function DevAnnotator() {
             img.onerror = () => resolve(null);
             img.src = res.dataUrl;
           });
-          roots.forEach((r) => (r.style.visibility = 'visible'));
           if (cropped) return cropped;
         }
       } catch (e) {}
     }
 
+    // 2. Standalone Fast Async Viewport Capture (Toolbar excluded via filter, 0ms disappearing!)
     try {
       const targetNode = document.getElementById('root') || document.body;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -293,7 +289,7 @@ export default function DevAnnotator() {
         cacheBust: false,
         skipFonts: true,
         filter: (node) => {
-          if (node.id && (node.id.includes('annotator') || node.id.includes('visualpatch'))) return false;
+          if (node.id && (node.id.includes('annotator') || node.id.includes('visualpatch') || node.id.includes('vp-'))) return false;
           return true;
         }
       });
@@ -318,8 +314,6 @@ export default function DevAnnotator() {
     } catch (err) {
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
-    } finally {
-      roots.forEach((r) => (r.style.visibility = 'visible'));
     }
   };
 
