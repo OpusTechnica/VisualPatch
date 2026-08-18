@@ -65,39 +65,79 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 ## 🚀 Quick Start & Installation
 
-### Option 1: Chrome / Edge / Brave Extension (Recommended)
+### Option 1: Instant Setup via `npx` (Fastest)
 
-1. **Clone or Download** this repository:
-   ```bash
-   git clone https://github.com/OpusTechnica/VisualPatch.git
-   ```
-2. Open your Chromium browser and go to the extensions management page:
-   - **Chrome**: `chrome://extensions`
-   - **Edge**: `edge://extensions`
-   - **Brave**: `brave://extensions`
-3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** and select the cloned folder.
-5. Open any local project running on `localhost` (e.g. `http://localhost:3000` or `http://localhost:5173`) — the sleek **`● V`** dock will appear automatically!
+Run this one-liner inside your project directory (supports Next.js, Vite, React, Vue, Astro, HTML):
+
+```bash
+npx visualpatch init
+```
+
+The interactive CLI will automatically detect your framework and configure VisualPatch in seconds.
 
 ---
 
-### Option 2: React / Vite In-App Dev Component
+### Option 2: Install via `npm` / `pnpm` / `yarn`
 
-If you prefer an in-app zero-extension setup during development, drop `VisualPatchDev.jsx` into your project:
+Install VisualPatch as a dev dependency:
+
+```bash
+npm install -D visualpatch
+# or
+pnpm add -D visualpatch
+# or
+yarn add -D visualpatch
+```
+
+Then import and render it inside your root layout or app component:
 
 ```jsx
-// App.jsx
-import VisualPatchDev from './components/dev/VisualPatchDev';
+// React / Vite (src/App.jsx)
+import { VisualPatch } from 'visualpatch';
 
 export default function App() {
   return (
     <>
       <YourAppContent />
-      {import.meta.env.DEV && <VisualPatchDev />}
+      {import.meta.env.DEV && <VisualPatch />}
     </>
   );
 }
 ```
+
+```jsx
+// Next.js (app/layout.jsx)
+import { VisualPatch } from 'visualpatch';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        {process.env.NODE_ENV === 'development' && <VisualPatch />}
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+### Option 3: Chrome / Edge / Brave Extension (Zero Code Changes)
+
+If you don't want to modify any project files, load it as a browser extension:
+
+1. **Clone or Download** this repository:
+   ```bash
+   git clone https://github.com/OpusTechnica/VisualPatch.git
+   ```
+2. Open your Chromium browser:
+   - **Chrome**: `chrome://extensions`
+   - **Edge**: `edge://extensions`
+   - **Brave**: `brave://extensions`
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the cloned directory.
+5. Open any localhost tab (e.g. `http://localhost:3000` or `http://localhost:5173`) — the **`● V`** dock appears automatically!
 
 ---
 

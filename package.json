@@ -1,0 +1,72 @@
+{
+  "name": "visualpatch",
+  "version": "1.0.0",
+  "description": "Universal in-browser visual feedback & pinpoint annotation tool for web development with AI pair programmers.",
+  "author": "OpusTechnica",
+  "license": "MIT",
+  "homepage": "https://github.com/OpusTechnica/VisualPatch#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpusTechnica/VisualPatch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OpusTechnica/VisualPatch/issues"
+  },
+  "keywords": [
+    "visualpatch",
+    "ai",
+    "feedback",
+    "visual-feedback",
+    "annotator",
+    "devtools",
+    "claude",
+    "cursor",
+    "chatgpt",
+    "windsurf",
+    "copilot",
+    "antigravity",
+    "vite",
+    "nextjs",
+    "react"
+  ],
+  "main": "index.js",
+  "module": "index.mjs",
+  "types": "index.d.ts",
+  "bin": {
+    "visualpatch": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "examples",
+    "index.js",
+    "index.mjs",
+    "index.d.ts",
+    "vanilla.js",
+    "content.js",
+    "content.css",
+    "manifest.json",
+    "popup.html",
+    "popup.js",
+    "background.js",
+    "icon16.png",
+    "icon48.png",
+    "icon128.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "test": "node bin/cli.js --help"
+  }
+}
