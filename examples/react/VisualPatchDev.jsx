@@ -23,11 +23,11 @@ export default function DevAnnotator() {
 
   // Mark in-app annotator active & remove any duplicate extension toolbar host
   useEffect(() => {
-    window.__antigravity_in_app_annotator = true;
-    const extHost = document.getElementById('antigravity-annotator-host');
+    window.__visualpatch_in_app_active = true;
+    const extHost = document.getElementById('visualpatch-host');
     if (extHost) extHost.remove();
     return () => {
-      window.__antigravity_in_app_annotator = false;
+      window.__visualpatch_in_app_active = false;
     };
   }, []);
 
@@ -567,7 +567,7 @@ export default function DevAnnotator() {
                 ref={textareaRef}
                 value={cardText}
                 onChange={(e) => setCardText(e.target.value)}
-                placeholder="What change would you like Antigravity to make here?..."
+                placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)"
                 style={{
                   width: '100%',
                   height: '80px',
