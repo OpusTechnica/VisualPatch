@@ -1034,15 +1034,24 @@
 
     let thumbnailHtml = '';
     if (item.screenshot) {
-      thumbnailHtml = `
-        <div class="vp-thumbnail-box">
-          <img class="vp-thumbnail-img" id="vp-thumb-img" src="${item.screenshot}" alt="Captured Area" />
-          <div class="vp-thumbnail-actions">
-            <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
-            <a class="vp-pill-action-btn" href="${item.screenshot}" download="visualpatch-pin-${item.number}.png" style="color: #38bdf8;">💾 PNG</a>
+      if (item.screenshot === 'pending') {
+        thumbnailHtml = `
+          <div id="vp-thumb-placeholder" style="margin-bottom: 12px; height: 75px; border-radius: 10px; background: rgba(0, 113, 227, 0.08); border: 1px dashed rgba(0, 113, 227, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px; color: #38bdf8; font-size: 11.5px; font-weight: 600;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></span>
+            <span>Processing area snapshot...</span>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        thumbnailHtml = `
+          <div class="vp-thumbnail-box">
+            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${item.screenshot}" alt="Captured Area" />
+            <div class="vp-thumbnail-actions">
+              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
+              <a class="vp-pill-action-btn" href="${item.screenshot}" download="visualpatch-pin-${item.number}.png" style="color: #38bdf8;">💾 PNG</a>
+            </div>
+          </div>
+        `;
+      }
     }
 
     card.innerHTML = `
@@ -1091,7 +1100,7 @@
 
     cardsContainer.appendChild(card);
 
-    if (item.screenshot) {
+    if (item.screenshot && item.screenshot !== 'pending') {
       card.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(item.screenshot));
       card.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(item.screenshot));
     }
@@ -1158,7 +1167,7 @@
       toggleInspect(false);
       btn.classList.add('vp-btn-active');
       marqueeBackdrop.style.display = 'block';
-      showToast('Area Screenshot Mode · Drag a box around any region (Esc to cancel)');
+      showToast('Area Screenshot Mode · Hold Right or Left mouse button to drag (Esc to cancel)');
     } else {
       btn.classList.remove('vp-btn-active');
       marqueeBackdrop.style.display = 'none';
@@ -1166,9 +1175,11 @@
     }
   }
 
-  // Marquee Drag Events
+  // Marquee Drag Events (Right-Click or Left-Click Hold)
+  marqueeBackdrop.addEventListener('contextmenu', (e) => e.preventDefault());
+
   marqueeBackdrop.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.button !== 2) return;
     isMarqueeDragging = true;
     marqueeStartX = e.clientX;
     marqueeStartY = e.clientY;
@@ -1200,7 +1211,7 @@
     marqueeDim.textContent = `${Math.round(w)} × ${Math.round(h)} px`;
   });
 
-  window.addEventListener('mouseup', async (e) => {
+  window.addEventListener('mouseup', (e) => {
     if (!isMarqueeDragging || !isScreenshotMode) return;
     isMarqueeDragging = false;
 
@@ -1220,9 +1231,6 @@
     const cropRect = { x, y, width: w, height: h };
     toggleScreenshot(false);
 
-    showToast('Capturing area screenshot...');
-    const screenshotDataUrl = await captureAreaNative(cropRect);
-
     // Detect element in center
     const centerX = x + w / 2;
     const centerY = y + h / 2;
@@ -1235,8 +1243,9 @@
     const pinX = Math.round(x + scrollX + 16);
     const pinY = Math.round(y + scrollY + 16);
 
+    const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const newAnnotation = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+      id: newId,
       number: currentPinNumber++,
       tag: el.tagName ? el.tagName.toLowerCase() : 'area',
       selector: selector || `area[${w}x${h}]`,
@@ -1244,9 +1253,50 @@
       note: '',
       x: pinX,
       y: pinY,
-      screenshot: screenshotDataUrl,
+      screenshot: 'pending',
       timestamp: new Date().toISOString()
     };
+
+    // 1. Instant 0ms UI update
+    annotations.push(newAnnotation);
+    saveStorage();
+    renderPins();
+
+    setTimeout(() => {
+      const pins = pinsContainer.querySelectorAll('.vp-pin');
+      const lastPin = pins[pins.length - 1];
+      if (lastPin) openNoteCard(newAnnotation, lastPin);
+    }, 30);
+
+    showToast(`📸 Area pinned (#${newAnnotation.number})`);
+
+    // 2. Perform snapshot asynchronously without freezing the UI
+    setTimeout(async () => {
+      const screenshotDataUrl = await captureAreaNative(cropRect);
+      if (screenshotDataUrl) {
+        newAnnotation.screenshot = screenshotDataUrl;
+        saveStorage();
+        renderPins();
+
+        // Update placeholder if card is currently open for this item
+        const placeholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+        if (placeholder) {
+          const thumbBox = document.createElement('div');
+          thumbBox.className = 'vp-thumbnail-box';
+          thumbBox.innerHTML = `
+            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${screenshotDataUrl}" alt="Captured Area" />
+            <div class="vp-thumbnail-actions">
+              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
+              <a class="vp-pill-action-btn" href="${screenshotDataUrl}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
+            </div>
+          `;
+          placeholder.replaceWith(thumbBox);
+          thumbBox.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(screenshotDataUrl));
+          thumbBox.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(screenshotDataUrl));
+        }
+      }
+    }, 20);
+  });
 
     annotations.push(newAnnotation);
     saveStorage();

@@ -235,9 +235,8 @@ export default function DevAnnotator() {
     };
   }, [isInspectMode, annotations]);
 
-  // Helper: Capture Cropped Area from DOM
+  // Fast, lag-free screenshot capture
   const captureAreaSnapshot = async (cropBox) => {
-    setIsCapturing(true);
     const roots = [
       document.getElementById('dev-annotator-fixed-root'),
       document.getElementById('dev-annotator-pins-root'),
@@ -248,12 +247,15 @@ export default function DevAnnotator() {
     roots.forEach((r) => (r.style.visibility = 'hidden'));
 
     try {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const targetNode = document.getElementById('root') || document.body;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
 
-      const canvas = await htmlToImage.toCanvas(document.body, {
+      const canvas = await htmlToImage.toCanvas(targetNode, {
         pixelRatio: dpr,
+        cacheBust: false,
+        skipFonts: true,
         filter: (node) => {
           if (node.id && (node.id.includes('annotator') || node.id.includes('visualpatch'))) return false;
           return true;
@@ -268,7 +270,7 @@ export default function DevAnnotator() {
       const cropCanvas = document.createElement('canvas');
       cropCanvas.width = Math.max(1, sourceW);
       cropCanvas.height = Math.max(1, sourceH);
-      const ctx = cropCanvas.getContext('2d');
+      const ctx = cropCanvas.getContext('2d', { alpha: false });
 
       ctx.drawImage(
         canvas,
@@ -276,17 +278,16 @@ export default function DevAnnotator() {
         0, 0, sourceW, sourceH
       );
 
-      return cropCanvas.toDataURL('image/png', 0.92);
+      return cropCanvas.toDataURL('image/jpeg', 0.88);
     } catch (err) {
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
     } finally {
       roots.forEach((r) => (r.style.visibility = 'visible'));
-      setIsCapturing(false);
     }
   };
 
-  // Area Screenshot Marquee Mode Handlers
+  // Area Screenshot Marquee Mode Handlers (Supports Right-Click or Left-Click Hold)
   useEffect(() => {
     if (!isScreenshotMode) {
       setMarqueeBox(null);
@@ -294,11 +295,18 @@ export default function DevAnnotator() {
       return;
     }
 
-    showToast('Area Screenshot Mode · Drag a box around any region (Esc to cancel)');
+    showToast('Area Screenshot Mode · Hold Right or Left mouse button to drag (Esc to cancel)');
+
+    const handleContextMenu = (e) => {
+      if (isScreenshotMode) {
+        e.preventDefault();
+      }
+    };
 
     const handleMouseDown = (e) => {
       if (e.target.closest('#dev-annotator-main-toolbar')) return;
-      if (e.button !== 0) return;
+      // Support Right Mouse Button (2) or Left Mouse Button (0)
+      if (e.button !== 0 && e.button !== 2) return;
 
       isMarqueeDraggingRef.current = true;
       marqueeStartRef.current = { x: e.clientX, y: e.clientY };
@@ -331,7 +339,7 @@ export default function DevAnnotator() {
       setMarqueeBox({ startX, startY, currentX, currentY, x, y, width, height });
     };
 
-    const handleMouseUp = async (e) => {
+    const handleMouseUp = (e) => {
       if (!isMarqueeDraggingRef.current) return;
       isMarqueeDraggingRef.current = false;
 
@@ -354,9 +362,6 @@ export default function DevAnnotator() {
       setMarqueeBox(null);
       setIsScreenshotMode(false);
 
-      showToast('Capturing area screenshot...');
-      const screenshotDataUrl = await captureAreaSnapshot(cropRect);
-
       // Detect element underneath the box center
       const centerX = x + width / 2;
       const centerY = y + height / 2;
@@ -369,9 +374,10 @@ export default function DevAnnotator() {
       const pinX = Math.round(x + scrollX + 16);
       const pinY = Math.round(y + scrollY + 16);
 
+      const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
       const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
       const newAnnotation = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        id: newId,
         number: nextNum,
         tag: el.tagName ? el.tagName.toLowerCase() : 'area',
         selector: selector || `area[${width}x${height}]`,
@@ -379,21 +385,39 @@ export default function DevAnnotator() {
         note: '',
         x: pinX,
         y: pinY,
-        screenshot: screenshotDataUrl,
+        screenshot: 'pending',
         timestamp: new Date().toISOString()
       };
 
+      // 1. Instant 0ms UI feedback (Zero lag!)
       const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
       setActiveCard(newAnnotation);
-      showToast(`📸 Captured area screenshot (#${nextNum})`);
+      showToast(`📸 Area pinned (#${nextNum})`);
+
+      // 2. Perform snapshot asynchronously without freezing the screen
+      setTimeout(async () => {
+        const screenshotDataUrl = await captureAreaSnapshot(cropRect);
+        if (screenshotDataUrl) {
+          setAnnotations((prev) => {
+            const withImage = prev.map((item) => (item.id === newId ? { ...item, screenshot: screenshotDataUrl } : item));
+            try {
+              localStorage.setItem(`visualpatch_notes_${window.location.pathname}`, JSON.stringify(withImage));
+            } catch (err) {}
+            return withImage;
+          });
+          setActiveCard((prev) => (prev && prev.id === newId ? { ...prev, screenshot: screenshotDataUrl } : prev));
+        }
+      }, 20);
     };
 
+    window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -977,78 +1001,100 @@ export default function DevAnnotator() {
                 {activeCard.textSnippet ? `"${activeCard.textSnippet}"` : activeCard.selector}
               </div>
 
-              {/* Screenshot Thumbnail Preview if Available */}
+              {/* Screenshot Thumbnail Preview / Loading Skeleton */}
               {activeCard.screenshot && (
-                <div
-                  style={{
-                    position: 'relative',
-                    marginBottom: '12px',
-                    borderRadius: '10px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(0, 113, 227, 0.4)',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)'
-                  }}
-                >
-                  <img
-                    src={activeCard.screenshot}
-                    alt="Captured Area"
-                    style={{
-                      width: '100%',
-                      height: '110px',
-                      objectFit: 'cover',
-                      display: 'block',
-                      cursor: 'zoom-in'
-                    }}
-                    onClick={() => setZoomImage(activeCard.screenshot)}
-                    title="Click to view full resolution"
-                  />
+                activeCard.screenshot === 'pending' ? (
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '6px',
-                      right: '6px',
+                      marginBottom: '12px',
+                      height: '75px',
+                      borderRadius: '10px',
+                      background: 'rgba(0, 113, 227, 0.08)',
+                      border: '1px dashed rgba(0, 113, 227, 0.35)',
                       display: 'flex',
-                      gap: '4px'
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      color: '#38bdf8',
+                      fontSize: '11.5px',
+                      fontWeight: 600
                     }}
                   >
-                    <button
-                      onClick={() => setZoomImage(activeCard.screenshot)}
-                      style={{
-                        padding: '3px 7px',
-                        borderRadius: '5px',
-                        background: 'rgba(12, 14, 18, 0.85)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#ffffff',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        backdropFilter: 'blur(8px)'
-                      }}
-                      title="Zoom full image"
-                    >
-                      🔍 Zoom
-                    </button>
-                    <a
-                      href={activeCard.screenshot}
-                      download={`visualpatch-pin-${activeCard.number}.png`}
-                      style={{
-                        padding: '3px 7px',
-                        borderRadius: '5px',
-                        background: 'rgba(12, 14, 18, 0.85)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#38bdf8',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                        backdropFilter: 'blur(8px)'
-                      }}
-                      title="Download PNG"
-                    >
-                      💾 PNG
-                    </a>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+                    <span>Processing area snapshot...</span>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    style={{
+                      position: 'relative',
+                      marginBottom: '12px',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(0, 113, 227, 0.4)',
+                      background: 'rgba(0, 0, 0, 0.6)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)'
+                    }}
+                  >
+                    <img
+                      src={activeCard.screenshot}
+                      alt="Captured Area"
+                      style={{
+                        width: '100%',
+                        height: '110px',
+                        objectFit: 'cover',
+                        display: 'block',
+                        cursor: 'zoom-in'
+                      }}
+                      onClick={() => setZoomImage(activeCard.screenshot)}
+                      title="Click to view full resolution"
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '6px',
+                        right: '6px',
+                        display: 'flex',
+                        gap: '4px'
+                      }}
+                    >
+                      <button
+                        onClick={() => setZoomImage(activeCard.screenshot)}
+                        style={{
+                          padding: '3px 7px',
+                          borderRadius: '5px',
+                          background: 'rgba(12, 14, 18, 0.85)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(8px)'
+                        }}
+                        title="Zoom full image"
+                      >
+                        🔍 Zoom
+                      </button>
+                      <a
+                        href={activeCard.screenshot}
+                        download={`visualpatch-pin-${activeCard.number}.png`}
+                        style={{
+                          padding: '3px 7px',
+                          borderRadius: '5px',
+                          background: 'rgba(12, 14, 18, 0.85)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#38bdf8',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          backdropFilter: 'blur(8px)'
+                        }}
+                        title="Download PNG"
+                      >
+                        💾 PNG
+                      </a>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* Textarea Input */}
