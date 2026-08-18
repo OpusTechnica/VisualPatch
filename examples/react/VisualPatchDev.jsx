@@ -235,7 +235,7 @@ export default function DevAnnotator() {
     };
   }, [isInspectMode, annotations]);
 
-  // Fast, lag-free screenshot capture
+  // Fast, lag-free screenshot capture (Native GPU capture if extension present, else fast async snapshot)
   const captureAreaSnapshot = async (cropBox) => {
     const roots = [
       document.getElementById('dev-annotator-fixed-root'),
@@ -245,6 +245,42 @@ export default function DevAnnotator() {
     ].filter(Boolean);
 
     roots.forEach((r) => (r.style.visibility = 'hidden'));
+
+    // Check if running inside extension with native Chromium GPU capture
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      try {
+        const res = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+            resolve(response);
+          });
+        });
+
+        if (res && res.success && res.dataUrl) {
+          const dpr = window.devicePixelRatio || 1;
+          const img = new Image();
+          const cropped = await new Promise((resolve) => {
+            img.onload = () => {
+              const cropCanvas = document.createElement('canvas');
+              cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
+              cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
+              const ctx = cropCanvas.getContext('2d', { alpha: false });
+              ctx.drawImage(
+                img,
+                Math.round(cropBox.x * dpr), Math.round(cropBox.y * dpr),
+                Math.round(cropBox.width * dpr), Math.round(cropBox.height * dpr),
+                0, 0,
+                cropCanvas.width, cropCanvas.height
+              );
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = () => resolve(null);
+            img.src = res.dataUrl;
+          });
+          roots.forEach((r) => (r.style.visibility = 'visible'));
+          if (cropped) return cropped;
+        }
+      } catch (e) {}
+    }
 
     try {
       const targetNode = document.getElementById('root') || document.body;

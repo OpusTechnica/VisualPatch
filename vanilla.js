@@ -944,7 +944,7 @@
     return new Blob([u8arr], { type: mime });
   }
 
-  // Helper: Native DOM Area Snapshot using SVG foreignObject or Canvas
+  // Native GPU Tab Capture: 0ms DOM lag, captures directly from Chromium C++ GPU frame buffer
   async function captureAreaNative(cropBox) {
     const roots = [
       host,
@@ -955,65 +955,47 @@
 
     roots.forEach(r => r.style.visibility = 'hidden');
 
-    try {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const scrollX = window.scrollX || 0;
-      const scrollY = window.scrollY || 0;
+    return new Promise((resolve) => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+          chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+            roots.forEach(r => r.style.visibility = 'visible');
 
-      const fullW = document.documentElement.scrollWidth;
-      const fullH = document.documentElement.scrollHeight;
+            if (!response || !response.success || !response.dataUrl) {
+              resolve(null);
+              return;
+            }
 
-      // Render foreignObject snapshot of body
-      const clone = document.body.cloneNode(true);
-      // Remove visualpatch elements from clone
-      const vpNodes = clone.querySelectorAll('#visualpatch-host, #visualpatch-pins-layer, #dev-annotator-fixed-root, #dev-annotator-pins-root');
-      vpNodes.forEach(n => n.remove());
+            const dpr = window.devicePixelRatio || 1;
+            const img = new Image();
+            img.onload = () => {
+              const cropCanvas = document.createElement('canvas');
+              cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
+              cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
+              const ctx = cropCanvas.getContext('2d', { alpha: false });
 
-      const svgData = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${window.innerWidth}" height="${window.innerHeight}">
-          <foreignObject width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="transform: translate(-${scrollX}px, -${scrollY}px);">
-              ${new XMLSerializer().serializeToString(clone)}
-            </div>
-          </foreignObject>
-        </svg>
-      `;
+              ctx.drawImage(
+                img,
+                Math.round(cropBox.x * dpr), Math.round(cropBox.y * dpr),
+                Math.round(cropBox.width * dpr), Math.round(cropBox.height * dpr),
+                0, 0,
+                cropCanvas.width, cropCanvas.height
+              );
 
-      // Crop Canvas
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = Math.max(1, cropBox.width * dpr);
-      cropCanvas.height = Math.max(1, cropBox.height * dpr);
-      const ctx = cropCanvas.getContext('2d');
-
-      const img = new Image();
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
-
-      await new Promise((resolve) => {
-        img.onload = () => {
-          ctx.drawImage(
-            img,
-            cropBox.x * dpr, cropBox.y * dpr, cropBox.width * dpr, cropBox.height * dpr,
-            0, 0, cropCanvas.width, cropCanvas.height
-          );
-          URL.revokeObjectURL(url);
-          resolve();
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve();
-        };
-        img.src = url;
-      });
-
-      const dataUrl = cropCanvas.toDataURL('image/png', 0.92);
-      return dataUrl.length > 100 ? dataUrl : null;
-    } catch (e) {
-      console.error('[VisualPatch] Snapshot error:', e);
-      return null;
-    } finally {
-      roots.forEach(r => r.style.visibility = 'visible');
-    }
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = () => resolve(null);
+            img.src = response.dataUrl;
+          });
+        } else {
+          roots.forEach(r => r.style.visibility = 'visible');
+          resolve(null);
+        }
+      } catch (err) {
+        roots.forEach(r => r.style.visibility = 'visible');
+        resolve(null);
+      }
+    });
   }
 
   // Open Linear-Style Note Card
