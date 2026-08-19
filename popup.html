@@ -4,361 +4,425 @@
   <meta charset="UTF-8">
   <title>VisualPatch</title>
   <style>
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       user-select: none;
+      -webkit-user-select: none;
+    }
+
+    :root {
+      --bg-base: #090a0f;
+      --bg-card: rgba(18, 21, 28, 0.7);
+      --bg-card-hover: rgba(26, 31, 42, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(56, 189, 248, 0.35);
+      --border-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #0071e3;
+      --accent-cyan: #38bdf8;
+      --accent-green: #10b981;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", -system-ui, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
     }
 
     body {
-      width: 330px;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #0b0d12;
-      color: #f1f5f9;
+      width: 320px;
+      padding: 14px;
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* 1. Header */
-    .vp-header {
+    /* Ambient Subtle Top Rim Light */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), rgba(0, 113, 227, 0.5), transparent);
+      pointer-events: none;
+    }
+
+    /* 1. Header (Apple Navigation Capsule) */
+    .vp-nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding-bottom: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .vp-brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .vp-logo-badge {
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #0071e3 0%, #0284c7 100%);
+    .vp-icon-wrap {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, #0071e3, #0284c7);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+      box-shadow: 0 0 10px rgba(0, 113, 227, 0.45);
     }
 
     .vp-title {
-      font-size: 13.5px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .vp-ver-tag {
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 600;
-      padding: 1.5px 5.5px;
-      border-radius: 9999px;
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.28);
-      color: #38bdf8;
-      letter-spacing: 0.02em;
-    }
-
-    .vp-status-pill {
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 5px;
-      font-size: 10.5px;
+    }
+
+    .vp-badge {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
       font-weight: 600;
-      color: #10b981;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      padding: 1px 4.5px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .vp-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4.5px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 500;
+      color: var(--accent-green);
       background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.22);
-      padding: 2.5px 8px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 2px 7px;
       border-radius: 9999px;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
     }
 
-    .vp-status-dot {
-      width: 6px;
-      height: 6px;
+    .vp-beacon {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-      animation: vp-pulse 2s infinite ease-in-out;
+      background: var(--accent-green);
+      box-shadow: 0 0 5px var(--accent-green);
+      animation: vp-glow 2.2s infinite ease-in-out;
     }
 
-    @keyframes vp-pulse {
+    @keyframes vp-glow {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
+      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* 2. Action Tiles */
-    .vp-actions {
+    /* 2. Linear Interactive Command Section */
+    .vp-section-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-left: 2px;
+    }
+
+    .vp-action-stack {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-bottom: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      box-shadow: var(--border-highlight), 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 12px;
+      overflow: hidden;
     }
 
-    .vp-action-btn {
+    .vp-action-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding: 9px 12px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8.5px 11px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
       cursor: pointer;
       text-align: left;
-      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-      overflow: hidden;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
-    .vp-action-btn:hover {
-      background: rgba(255, 255, 255, 0.07);
-      border-color: rgba(56, 189, 248, 0.35);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    .vp-action-row:last-child {
+      border-bottom: none;
     }
 
-    .vp-action-btn:active {
-      transform: translateY(0);
+    .vp-action-row:hover {
+      background: var(--bg-card-hover);
     }
 
-    .vp-btn-left {
+    .vp-action-row:hover .vp-action-icon {
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    .vp-action-row:hover .vp-action-title {
+      color: #ffffff;
+    }
+
+    .vp-row-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
     }
 
-    .vp-icon-circle {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .vp-action-icon {
+      width: 15px;
+      height: 15px;
+      color: var(--text-secondary);
       flex-shrink: 0;
+      transition: transform 0.15s ease, color 0.15s ease;
     }
 
-    .vp-btn-info {
+    .vp-action-meta {
       display: flex;
       flex-direction: column;
-      gap: 1.5px;
+      gap: 0.5px;
     }
 
-    .vp-btn-title {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: #f8fafc;
+    .vp-action-title {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #e2e8f0;
+      transition: color 0.15s ease;
     }
 
-    .vp-btn-desc {
-      font-size: 10.5px;
-      color: #94a3b8;
+    .vp-action-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: -0.005em;
     }
 
-    .vp-kbd-badge {
+    /* 3. Apple Hardware Keycap Badges */
+    .vp-kbd-group {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 2.5px;
     }
 
     kbd {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 10.5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
       font-weight: 600;
-      padding: 2.5px 6px;
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: #e2e8f0;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      line-height: 1;
+      padding: 3px 5.5px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom-color: rgba(255, 255, 255, 0.18);
+      color: #cbd5e1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
-    /* 3. Keyboard Cheat Sheet Card */
-    .vp-guide-card {
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    /* 4. Keyboard Shortcuts Matrix Card */
+    .vp-matrix-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
       border-radius: 10px;
-      padding: 10px 12px;
-      margin-bottom: 12px;
+      box-shadow: var(--border-highlight);
+      padding: 9px 11px;
+      margin-bottom: 11px;
     }
 
-    .vp-guide-header {
+    .vp-matrix-header {
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 700;
-      color: #cbd5e1;
-      letter-spacing: 0.03em;
-      margin-bottom: 8px;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
+      margin-bottom: 7px;
     }
 
-    .vp-guide-grid {
+    .vp-matrix-grid {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 6px 10px;
+      gap: 5px 9px;
       align-items: center;
     }
 
-    .vp-guide-action {
-      font-size: 11px;
-      color: #94a3b8;
+    .vp-matrix-desc {
+      font-size: 10.5px;
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* 4. Footer */
+    /* 5. Minimalist Footer */
     .vp-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 10.5px;
-      color: #64748b;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 10px;
+      color: var(--text-muted);
     }
 
     .vp-footer a {
-      color: #38bdf8;
+      color: var(--accent-cyan);
       text-decoration: none;
-      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       transition: color 0.15s;
     }
 
     .vp-footer a:hover {
       color: #7dd3fc;
-      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <!-- Header -->
-  <div class="vp-header">
+  <header class="vp-nav">
     <div class="vp-brand">
-      <div class="vp-logo-badge">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <div class="vp-icon-wrap">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10" />
           <path d="m9 12 2 2 4-4" />
         </svg>
       </div>
       <div class="vp-title">
         VisualPatch
-        <span class="vp-ver-tag">v2.0</span>
+        <span class="vp-badge">v2.0</span>
       </div>
     </div>
-    <div class="vp-status-pill">
-      <span class="vp-status-dot"></span>
-      <span>LOCALHOST</span>
+    <div class="vp-status">
+      <span class="vp-beacon"></span>
+      <span>ACTIVE</span>
     </div>
-  </div>
+  </header>
 
-  <!-- Action Tiles -->
-  <div class="vp-actions">
-    <!-- 1. Area Screenshot -->
-    <button class="vp-action-btn" id="toggle-screenshot">
-      <div class="vp-btn-left">
-        <div class="vp-icon-circle" style="background: rgba(2, 132, 199, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-        </div>
-        <div class="vp-btn-info">
-          <span class="vp-btn-title">Area Screenshot</span>
-          <span class="vp-btn-desc">Spotlight crop with dimensions</span>
+  <!-- Commands Stack -->
+  <div class="vp-section-label">Quick Actions</div>
+  <div class="vp-action-stack">
+    <!-- Area Screenshot -->
+    <button class="vp-action-row" id="toggle-screenshot" title="Press S to capture screenshot">
+      <div class="vp-row-left">
+        <svg class="vp-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+        <div class="vp-action-meta">
+          <span class="vp-action-title">Area Screenshot</span>
+          <span class="vp-action-sub">Spotlight crop & dimension pill</span>
         </div>
       </div>
-      <div class="vp-kbd-badge">
+      <div class="vp-kbd-group">
         <kbd>S</kbd>
       </div>
     </button>
 
-    <!-- 2. Inspect & Drop Pin -->
-    <button class="vp-action-btn" id="toggle-inspect">
-      <div class="vp-btn-left">
-        <div class="vp-icon-circle" style="background: rgba(0, 113, 227, 0.18); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3);">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="22" y1="12" x2="18" y2="12" />
-            <line x1="6" y1="12" x2="2" y2="12" />
-            <line x1="12" y1="6" x2="12" y2="2" />
-            <line x1="12" y1="22" x2="12" y2="18" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </div>
-        <div class="vp-btn-info">
-          <span class="vp-btn-title">Inspect & Drop Pin</span>
-          <span class="vp-btn-desc">Hover & click DOM elements</span>
+    <!-- Inspect & Pin -->
+    <button class="vp-action-row" id="toggle-inspect" title="Hover & click element to annotate">
+      <div class="vp-row-left">
+        <svg class="vp-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="22" y1="12" x2="18" y2="12" />
+          <line x1="6" y1="12" x2="2" y2="12" />
+          <line x1="12" y1="6" x2="12" y2="2" />
+          <line x1="12" y1="22" x2="12" y2="18" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <div class="vp-action-meta">
+          <span class="vp-action-title">Inspect & Drop Pin</span>
+          <span class="vp-action-sub">Live selector & text extraction</span>
         </div>
       </div>
-      <div class="vp-kbd-badge">
+      <div class="vp-kbd-group">
         <kbd>Esc</kbd>
       </div>
     </button>
 
-    <!-- 3. Toggle Toolbar Dock -->
-    <button class="vp-action-btn" id="toggle-toolbar">
-      <div class="vp-btn-left">
-        <div class="vp-icon-circle" style="background: rgba(139, 92, 246, 0.16); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3);">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </div>
-        <div class="vp-btn-info">
-          <span class="vp-btn-title">Floating Dock</span>
-          <span class="vp-btn-desc">Show or hide on-screen toolbar</span>
+    <!-- Floating Dock -->
+    <button class="vp-action-row" id="toggle-toolbar" title="Toggle on-screen toolbar">
+      <div class="vp-row-left">
+        <svg class="vp-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <div class="vp-action-meta">
+          <span class="vp-action-title">Floating Dock</span>
+          <span class="vp-action-sub">Show / hide on-screen toolbar</span>
         </div>
       </div>
-      <div class="vp-kbd-badge">
-        <kbd>Alt</kbd>+<kbd>T</kbd>
+      <div class="vp-kbd-group">
+        <kbd>Alt</kbd><kbd>T</kbd>
       </div>
     </button>
   </div>
 
-  <!-- Keyboard Shortcuts Cheat Sheet -->
-  <div class="vp-guide-card">
-    <div class="vp-guide-header">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Keyboard Shortcuts Matrix -->
+  <div class="vp-matrix-card">
+    <div class="vp-matrix-header">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect width="20" height="16" x="2" y="4" rx="2" />
         <path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10" />
       </svg>
-      <span>Keyboard Cheat Sheet</span>
+      <span>Keyboard Shortcuts</span>
     </div>
-    <div class="vp-guide-grid">
-      <div class="vp-kbd-badge"><kbd>S</kbd></div>
-      <div class="vp-guide-action">Area Screenshot Spotlight</div>
+    <div class="vp-matrix-grid">
+      <div class="vp-kbd-group"><kbd>S</kbd></div>
+      <div class="vp-matrix-desc">Crop Area Screenshot</div>
 
-      <div class="vp-kbd-badge"><kbd>Ctrl</kbd>+<kbd>C</kbd></div>
-      <div class="vp-guide-action">Copy for AI (+ image strip)</div>
+      <div class="vp-kbd-group"><kbd>Ctrl</kbd><kbd>C</kbd></div>
+      <div class="vp-matrix-desc">Copy for AI (+ image strip)</div>
 
-      <div class="vp-kbd-badge"><kbd>Esc</kbd></div>
-      <div class="vp-guide-action">Toggle Inspect / Close Card</div>
+      <div class="vp-kbd-group"><kbd>Esc</kbd></div>
+      <div class="vp-matrix-desc">Toggle Inspect / Close Card</div>
 
-      <div class="vp-kbd-badge"><kbd>Alt</kbd>+<kbd>T</kbd></div>
-      <div class="vp-guide-action">Minimize / Show Dock</div>
+      <div class="vp-kbd-group"><kbd>Alt</kbd><kbd>T</kbd></div>
+      <div class="vp-matrix-desc">Minimize / Show Dock</div>
 
-      <div class="vp-kbd-badge"><kbd>Enter</kbd></div>
-      <div class="vp-guide-action">Save Note (inside card)</div>
+      <div class="vp-kbd-group"><kbd>Enter</kbd></div>
+      <div class="vp-matrix-desc">Save Note (inside card)</div>
     </div>
   </div>
 
   <!-- Footer -->
-  <div class="vp-footer">
-    <span>🔒 100% Local • Zero Telemetry</span>
-    <a href="https://github.com/OpusTechnica/VisualPatch" target="_blank" rel="noreferrer">GitHub ↗</a>
-  </div>
+  <footer class="vp-footer">
+    <span>100% Local • Zero Telemetry</span>
+    <a href="https://github.com/OpusTechnica/VisualPatch" target="_blank" rel="noreferrer">
+      GitHub
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 17 17 7M7 7h10v10" />
+      </svg>
+    </a>
+  </footer>
 
   <script src="popup.js"></script>
 </body>
