@@ -530,17 +530,25 @@ export default function DevAnnotator() {
     return path.join(' > ');
   };
 
-  // Helper: Convert data URL to Blob for Clipboard API
-  const dataURLtoBlob = (dataurl) => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
+  // Helper: Convert any data URL to pure image/png Blob for Clipboard API
+  const dataURLtoPngBlob = (dataurl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth || img.width;
+        c.height = img.naturalHeight || img.height;
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          c.toBlob((blob) => resolve(blob), 'image/png');
+        } else {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataurl;
+    });
   };
 
   // Dragging Toolbar Handlers
@@ -635,7 +643,8 @@ export default function DevAnnotator() {
 
     if (screenshotItems.length === 1) {
       try {
-        return dataURLtoBlob(screenshotItems[0].screenshot);
+        const singlePng = await dataURLtoPngBlob(screenshotItems[0].screenshot);
+        if (singlePng) return singlePng;
       } catch (e) {}
     }
 

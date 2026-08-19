@@ -1317,6 +1317,28 @@
   });
 
   // Helper: Create a single auto-stitched composite image strip for multiple screenshots
+  // Helper: Convert any data URL to pure image/png Blob for Clipboard API
+  function dataURLtoPngBlob(dataurl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth || img.width;
+        c.height = img.naturalHeight || img.height;
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          c.toBlob((blob) => resolve(blob), 'image/png');
+        } else {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataurl;
+    });
+  }
+
+  // Helper: Create a single auto-stitched composite image strip for multiple screenshots
   async function createCompositeScreenshotBlob(items) {
     const screenshotItems = items.filter(
       (item) => item.screenshot && item.screenshot.startsWith('data:image/')
@@ -1325,7 +1347,8 @@
 
     if (screenshotItems.length === 1) {
       try {
-        return dataURLtoBlob(screenshotItems[0].screenshot);
+        const singlePng = await dataURLtoPngBlob(screenshotItems[0].screenshot);
+        if (singlePng) return singlePng;
       } catch (e) {}
     }
 
