@@ -110,7 +110,9 @@ export default function DevAnnotator() {
         return;
       }
 
-      const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+      const isTyping =
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
+        document.activeElement?.isContentEditable;
 
       // Ctrl + C / Cmd + C / Alt + C shortcut to copy feedback
       const isCopyKey = (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') && (e.ctrlKey || e.metaKey || e.altKey);
@@ -134,14 +136,11 @@ export default function DevAnnotator() {
         setIsScreenshotMode(false);
         setIsInspectMode((prev) => !prev);
       }
-      // Area Screenshot Mode Shortcut: Fn key, F7, F10, or Alt + S
+      // Area Screenshot Mode Shortcut: Just "S" key (or Alt + S / F7)
       const isScreenshotKey =
-        e.key === 'Fn' ||
-        e.key === 'FnLock' ||
-        e.code === 'Fn' ||
-        e.key === 'F7' ||
-        e.key === 'F10' ||
-        (e.altKey && (e.key === 's' || e.key === 'S' || e.code === 'KeyS'));
+        !e.ctrlKey &&
+        !e.metaKey &&
+        (e.key === 's' || e.key === 'S' || e.code === 'KeyS' || e.key === 'F7');
 
       if (isScreenshotKey) {
         e.preventDefault();
@@ -1460,7 +1459,7 @@ export default function DevAnnotator() {
                     e.currentTarget.style.color = '#cbd5e1';
                   }
                 }}
-                title={isScreenshotMode ? 'Area Screenshot Active · Drag box on screen (Fn / Alt+S)' : 'Take Area Screenshot (Fn / Alt+S)'}
+                title={isScreenshotMode ? 'Area Screenshot Active · Drag box on screen (Press S)' : 'Take Area Screenshot (Press S)'}
               >
                 <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />

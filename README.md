@@ -57,7 +57,7 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 | Shortcut | Action |
 | :--- | :--- |
 | <kbd>Esc</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> / <kbd>F9</kbd> | **Toggle Inspect Mode** (Drop pins on click / Exit inspect) |
-| <kbd>Fn</kbd> / <kbd>F7</kbd> / <kbd>Alt</kbd> + <kbd>S</kbd> | **Area Screenshot Marquee** (Drag box on screen to snapshot) |
+| <kbd>S</kbd> / <kbd>Alt</kbd> + <kbd>S</kbd> | **Area Screenshot Marquee** (Drag box on screen to snapshot) |
 | <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>⌘</kbd> + <kbd>C</kbd> | **Copy All Feedbacks + Screenshots for AI** |
 | <kbd>Alt</kbd> + <kbd>T</kbd> or <kbd>F8</kbd> | **Toggle / Minimize Toolbar** |
 | <kbd>Enter</kbd> | **Save Pin Note** (inside feedback card) |
