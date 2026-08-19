@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VisualPatch — Visual Feedback for AI Pair Programmers",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Universal in-browser visual inspection and feedback tool for web development with AI pair programmers (Claude, Cursor, ChatGPT, Windsurf, Copilot).",
   "permissions": [
     "storage",

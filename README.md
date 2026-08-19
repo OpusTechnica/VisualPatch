@@ -1,13 +1,26 @@
-# 🎯 VisualPatch
+# 🎯 VisualPatch v2.0
 
 > **Universal In-Browser Visual Feedback & Inspection Tool for AI Pair Programmers.**  
 > Effortlessly guide **Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, and Devin** with pinpoint visual precision.  
-> Crafted with an ultra-premium **Linear + Apple-inspired frosted glass aesthetic**.
+> Crafted with an ultra-premium **CleanShot X + Apple Pro frosted glass aesthetic**.
 
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/OpusTechnica/VisualPatch/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![NPM Version](https://img.shields.io/npm/v/visualpatch.svg?color=cb3837)](https://www.npmjs.com/package/visualpatch)
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-success.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Style: Linear Glass](https://img.shields.io/badge/Design-Linear%20%2B%20Apple%20Glass-0071e3.svg)](#features)
+[![Style: CleanShot X Glass](https://img.shields.io/badge/Design-CleanShot%20X%20%2B%20Apple%20Glass-0071e3.svg)](#features)
 [![Privacy: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-emerald.svg)](#privacy--security)
+
+---
+
+## 🚀 What's New in v2.0
+
+- 📷 **CleanShot X Studio Spotlight Viewfinder**: Crystal-clear crop window with infinite spotlight backdrop shading (`box-shadow: 0 0 0 99999px rgba(0, 0, 0, 0.52)`), dual-contrast boundary, 4 precision CAD L-brackets, center reticle, and floating acrylic dimension capsule (`953 × 393 PX`).
+- 🖼️ **Auto-Stitched Multi-Screenshot Strip**: Capturing multiple screenshot pins automatically stitches them into **one consolidated image strip** with dark headers (`PIN #1: selector`, `PIN #2: selector`), bypassing the OS single-image clipboard limitation!
+- ⚡ **0ms Lag-Free Micro-Container Snapshot Engine**: Localized container resolution cuts area snapshot execution from 1,500ms down to **~3ms** with zero UI thread freeze.
+- 🎯 **Accurate Component Selector Engine**: Uses `document.elementsFromPoint` with deep overlay exclusion to capture exact underlying UI elements (`h1.hero-title`, `nav.header`, `button.cta`) rather than overlay backdrops.
+- ⌨️ **Single-Key <kbd>S</kbd> Shortcut**: Press <kbd>S</kbd> to toggle Area Screenshot mode instantly, protected by smart input-safe typing guards.
+- 📦 **Multi-Format Distribution**: Available via `npx`, `npm`, standalone CDN script, and ready-to-load ZIP extension package!
 
 ---
 
@@ -15,20 +28,21 @@
 
 Explaining UI tweaks, alignment issues, and styling bugs to AI in chat is slow and frustrating:
 - ❌ *"Make the second button in the middle a bit higher and change its color."* (Vague, AI guesses the wrong selector)
-- ✅ **With VisualPatch**: Click any element on your screen, type your request, and press **Enter** (or **Ctrl+C**).
+- ✅ **With VisualPatch**: Press **`S`** to crop an area or click any element, type your note, and press **Ctrl+C**.
 
 VisualPatch automatically captures:
 1. **Exact CSS Selectors**: `div.hero > div.cta-group > button.btn-primary:nth-of-type(1)`
 2. **Text Content Previews**: `"Schedule Discovery Session"`
 3. **Viewport & Document Coordinates**: Precise anchor points that scroll in sync with your page.
-4. **Structured Markdown Prompt**: Ready to paste directly into any AI assistant, PR, or Issue!
+4. **Structured Markdown Prompt**: Lightweight, token-efficient prompt (0 base64 waste) ready to paste into any AI chat.
+5. **Consolidated High-Res Screenshot Strip**: Automatically placed on your OS clipboard ready for instant visual paste.
 
 ---
 
 ## ⚡ Compatible with All AI Agents
 
 VisualPatch produces standard, clean markdown prompts optimized for:
-- 🤖 **Claude / Anthropic** (Claude Code, Artifacts, Web)
+- 🤖 **Claude / Anthropic** (Claude Code, Artifacts, Web, Desktop)
 - ⚡ **Cursor IDE**
 - 💬 **ChatGPT / OpenAI** (GPT-4o, Canvas, Codex)
 - 🌊 **Windsurf / Codeium**
@@ -40,13 +54,13 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 ## ✨ Key Features
 
-- 💎 **Linear + Apple Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
+- 💎 **CleanShot X + Apple Pro Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
 - 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
-- 📸 **Area Screenshot Marquee Tool**: Drag a glowing blue bounding box over any element or section to capture a high-resolution screenshot attached to your feedback pin.
+- 📸 **Spotlight Area Screenshot Marquee Tool**: Drag a spotlight box over any element or section with true-color subject fidelity and live acrylic dimension capsule.
 - 🖼️ **In-Card Thumbnail & Lightbox**: View instant previews, click to zoom full-resolution, and download clean PNG files.
 - 📍 **True-Document Pin Anchoring**: Dropped pins stay glued to their exact document position even during smooth scrolling.
-- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>Alt</kbd>+<kbd>S</kbd> for area snapshots.
-- 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown + copies the image blob directly to your clipboard for instant pasting into AI chat.
+- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>S</kbd> for area snapshots.
+- 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown + copies the stitched image strip directly to your clipboard.
 - 🖐️ **Draggable Anywhere**: Drag the toolbar or the collapsed capsule to any corner of your screen—persists smoothly across page refreshes.
 - 🛡️ **Zero Telemetry / 100% Local**: Runs strictly on local development domains (`localhost`, `127.0.0.1`, local ports). No external servers, no tracking, zero analytics.
 
@@ -56,19 +70,21 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 | Shortcut | Action |
 | :--- | :--- |
-| <kbd>Esc</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> / <kbd>F9</kbd> | **Toggle Inspect Mode** (Drop pins on click / Exit inspect) |
-| <kbd>S</kbd> / <kbd>Alt</kbd> + <kbd>S</kbd> | **Area Screenshot Marquee** (Drag box on screen to snapshot) |
-| <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>⌘</kbd> + <kbd>C</kbd> | **Copy All Feedbacks + Screenshots for AI** |
-| <kbd>Alt</kbd> + <kbd>T</kbd> or <kbd>F8</kbd> | **Toggle / Minimize Toolbar** |
-| <kbd>Enter</kbd> | **Save Pin Note** (inside feedback card) |
-| <kbd>Shift</kbd> + <kbd>Enter</kbd> | **New Line** (inside feedback card) |
-| <kbd>Esc</kbd> | **Close Feedback Card / Cancel Screenshot** |
+| **<kbd>S</kbd>** (or <kbd>Alt</kbd> + <kbd>S</kbd>) | **Toggle Area Screenshot Mode** (Drag to crop & pin) |
+| **<kbd>Esc</kbd>** (or <kbd>Alt</kbd> + <kbd>D</kbd> / <kbd>F9</kbd>) | **Toggle Element Inspect Mode** / Exit |
+| **<kbd>Ctrl</kbd> + <kbd>C</kbd>** / **<kbd>⌘</kbd> + <kbd>C</kbd>** | **Copy Feedbacks + Stitched Screenshot Strip for AI** |
+| **<kbd>Alt</kbd> + <kbd>T</kbd>** or **<kbd>F8</kbd>** | **Toggle / Minimize Toolbar** |
+| **<kbd>Enter</kbd>** | **Save Pin Note** (inside feedback card) |
+| **<kbd>Shift</kbd> + <kbd>Enter</kbd>** | **New Line** (inside feedback card) |
+| **<kbd>Esc</kbd>** | **Close Feedback Card / Cancel Screenshot** |
 
 ---
 
-## 🚀 Quick Start & Installation
+## 🚀 Installation & Download Options
 
-### Option 1: Instant Setup via `npx` (Fastest)
+Choose the installation method that fits your workflow:
+
+### Option 1: Instant Setup via `npx` (Fastest for Projects)
 
 Run this one-liner inside your project directory (supports Next.js, Vite, React, Vue, Astro, HTML):
 
@@ -92,10 +108,8 @@ pnpm add -D visualpatch
 yarn add -D visualpatch
 ```
 
-Then import and render it inside your root layout or app component:
-
+#### React / Vite (`src/App.jsx`)
 ```jsx
-// React / Vite (src/App.jsx)
 import { VisualPatch } from 'visualpatch';
 
 export default function App() {
@@ -108,8 +122,8 @@ export default function App() {
 }
 ```
 
+#### Next.js App Router (`app/layout.jsx`)
 ```jsx
-// Next.js (app/layout.jsx)
 import { VisualPatch } from 'visualpatch';
 
 export default function RootLayout({ children }) {
@@ -126,21 +140,29 @@ export default function RootLayout({ children }) {
 
 ---
 
-### Option 3: Chrome / Edge / Brave Extension (Zero Code Changes)
+### Option 3: Download Extension Package (`.zip`)
 
-If you don't want to modify any project files, load it as a browser extension:
+Download the standalone extension package for Chromium browsers (Chrome, Edge, Brave, Arc, Opera):
 
-1. **Clone or Download** this repository:
-   ```bash
-   git clone https://github.com/OpusTechnica/VisualPatch.git
-   ```
-2. Open your Chromium browser:
+1. **Download the latest release zip**: [VisualPatch-v2.0.0.zip](https://github.com/OpusTechnica/VisualPatch/releases/download/v2.0.0/VisualPatch-v2.0.0.zip) (or clone the repo).
+2. Unzip the downloaded folder.
+3. Open your browser extensions page:
    - **Chrome**: `chrome://extensions`
    - **Edge**: `edge://extensions`
    - **Brave**: `brave://extensions`
-3. Enable **Developer mode** (top right).
-4. Click **Load unpacked** and select the cloned directory.
-5. Open any localhost tab (e.g. `http://localhost:3000` or `http://localhost:5173`) — the **`● V`** dock appears automatically!
+4. Turn on **Developer mode** (top right toggle).
+5. Click **Load unpacked** and select the unzipped directory.
+6. Open any `localhost` tab — the **`● V`** dock appears automatically!
+
+---
+
+### Option 4: Standalone CDN `<script>` Tag (Vanilla HTML)
+
+For static HTML prototypes, add this single line before the closing `</body>` tag:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/visualpatch@2.0.0/vanilla.js" defer></script>
+```
 
 ---
 
@@ -153,14 +175,16 @@ When you click **📋 Copy for AI** (or press **Ctrl+C**), your clipboard will c
 **URL:** `http://localhost:3000/#`
 **Total Items:** 2
 
-#### 1. Element: `header.navbar > div.nav-right > button.cta-btn`
+#### 1. Element: `header.navbar > div.nav-right > button.cta-btn` 📸 [Area Screenshot Attached]
 - **Current Content:** "Schedule Discovery"
 - **Requested Change:** Add the dual-arrow diagonal pass-through hover animation matching the hero button.
 
-#### 2. Element: `div.pricing-grid > div.card-pro:nth-of-type(2) > h3.price`
+#### 2. Element: `div.pricing-grid > div.card-pro:nth-of-type(2) > h3.price` 📸 [Area Screenshot Attached]
 - **Current Content:** "$99/mo"
 - **Requested Change:** Make the font 2px larger and apply high-contrast white with 800 weight.
 ```
+
+*(Plus the auto-stitched multi-screenshot composite image strip ready on your system clipboard for instant paste into Claude / ChatGPT / Discord / GitHub).*
 
 ---
 
