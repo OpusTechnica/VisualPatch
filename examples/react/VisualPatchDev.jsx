@@ -110,9 +110,13 @@ export default function DevAnnotator() {
         return;
       }
 
-      const isTyping =
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
-        document.activeElement?.isContentEditable;
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable ||
+        activeEl.getAttribute('contenteditable') === 'true' ||
+        activeEl.getAttribute('role') === 'textbox'
+      );
 
       // Ctrl + C / Cmd + C / Alt + C shortcut to copy feedback
       const isCopyKey = (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') && (e.ctrlKey || e.metaKey || e.altKey);
@@ -140,7 +144,13 @@ export default function DevAnnotator() {
       const isScreenshotKey =
         !e.ctrlKey &&
         !e.metaKey &&
-        (e.key === 's' || e.key === 'S' || e.code === 'KeyS' || e.key === 'F7');
+        (
+          e.key?.toLowerCase() === 's' ||
+          e.code === 'KeyS' ||
+          e.keyCode === 83 ||
+          e.key === 'F7' ||
+          (e.altKey && (e.key === 's' || e.key === 'S' || e.code === 'KeyS'))
+        );
 
       if (isScreenshotKey) {
         e.preventDefault();
@@ -412,10 +422,23 @@ export default function DevAnnotator() {
       setMarqueeBox(null);
       setIsScreenshotMode(false);
 
-      // Detect element underneath the box center
+      // Detect underlying element (filtering out VisualPatch overlays)
       const centerX = x + width / 2;
       const centerY = y + height / 2;
-      const el = document.elementFromPoint(centerX, centerY) || document.body;
+      const elementsAtPoint = document.elementsFromPoint ? document.elementsFromPoint(centerX, centerY) : [];
+      const el = elementsAtPoint.find((node) => {
+        if (!node || node === document.body || node === document.documentElement) return false;
+        if (
+          node.id === 'vp-marquee-backdrop' ||
+          node.id === 'dev-annotator-fixed-root' ||
+          node.id === 'visualpatch-host' ||
+          node.closest?.('#dev-annotator-fixed-root') ||
+          node.closest?.('#dev-annotator-pins-root') ||
+          node.closest?.('#visualpatch-host') ||
+          node.closest?.('#visualpatch-pins-layer')
+        ) return false;
+        return true;
+      }) || document.body;
       const selector = getCssSelector(el);
       const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
@@ -603,6 +626,109 @@ export default function DevAnnotator() {
     e.preventDefault();
   };
 
+  // Helper: Create a single auto-stitched composite image strip for multiple screenshots
+  const createCompositeScreenshotBlob = async (items) => {
+    const screenshotItems = items.filter(
+      (item) => item.screenshot && item.screenshot.startsWith('data:image/')
+    );
+    if (!screenshotItems.length) return null;
+
+    if (screenshotItems.length === 1) {
+      try {
+        return dataURLtoBlob(screenshotItems[0].screenshot);
+      } catch (e) {}
+    }
+
+    const loadedImages = await Promise.all(
+      screenshotItems.map((item) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve({ item, img, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+          img.onerror = () => resolve(null);
+          img.src = item.screenshot;
+        });
+      })
+    );
+
+    const valid = loadedImages.filter(Boolean);
+    if (!valid.length) return null;
+
+    const padding = 20;
+    const headerHeight = 34;
+    const itemGap = 20;
+
+    const maxImgWidth = Math.max(...valid.map((v) => v.width), 480);
+    const canvasWidth = maxImgWidth + padding * 2;
+
+    let totalHeight = padding;
+    valid.forEach((v) => {
+      totalHeight += headerHeight + 8 + v.height + itemGap;
+    });
+    totalHeight += padding - itemGap;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasWidth;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    // Background
+    ctx.fillStyle = '#0f1115';
+    ctx.fillRect(0, 0, canvasWidth, totalHeight);
+
+    let currentY = padding;
+    valid.forEach((v, index) => {
+      const itemNum = v.item.number || index + 1;
+      const selector = v.item.selector || 'Element';
+
+      // Header Bar Background
+      ctx.fillStyle = '#171922';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(padding, currentY, canvasWidth - padding * 2, headerHeight, 6);
+      } else {
+        ctx.rect(padding, currentY, canvasWidth - padding * 2, headerHeight);
+      }
+      ctx.fill();
+
+      // Badge Pill (#1 / #2)
+      ctx.fillStyle = '#0071e3';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(padding + 8, currentY + 6, 64, headerHeight - 12, 4);
+      } else {
+        ctx.rect(padding + 8, currentY + 6, 64, headerHeight - 12);
+      }
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`PIN #${itemNum}`, padding + 15, currentY + 21);
+
+      // Selector Monospace
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+      const cleanSelector = selector.length > 55 ? selector.slice(0, 52) + '...' : selector;
+      ctx.fillText(cleanSelector, padding + 82, currentY + 21);
+
+      currentY += headerHeight + 8;
+
+      // Draw Screenshot Image
+      ctx.drawImage(v.img, padding, currentY, v.width, v.height);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(padding, currentY, v.width, v.height);
+
+      currentY += v.height + itemGap;
+    });
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  };
+
   // Copy structured markdown & attached screenshot for AI & auto-clear
   const copyForAI = async () => {
     if (!annotations.length) {
@@ -614,34 +740,24 @@ export default function DevAnnotator() {
     payload += `**URL:** \`${window.location.href}\`\n`;
     payload += `**Total Items:** ${count}\n\n`;
 
-    let hasScreenshots = false;
-    let firstScreenshotBlob = null;
-
     annotations.forEach((item, index) => {
       payload += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
       if (item.textSnippet) payload += `- **Current Content:** "${item.textSnippet}"\n`;
       payload += `- **Requested Change:** ${item.note || 'No specific note added'}\n\n`;
-
-      if (item.screenshot && !firstScreenshotBlob) {
-        try {
-          firstScreenshotBlob = dataURLtoBlob(item.screenshot);
-          hasScreenshots = true;
-        } catch (e) {}
-      }
     });
 
     try {
-      // Try writing both text and image blob if supported by browser
-      if (hasScreenshots && firstScreenshotBlob && navigator.clipboard && window.ClipboardItem) {
+      const compositeBlob = await createCompositeScreenshotBlob(annotations);
+      if (compositeBlob && navigator.clipboard && window.ClipboardItem) {
         await navigator.clipboard.write([
           new ClipboardItem({
             'text/plain': new Blob([payload], { type: 'text/plain' }),
-            'image/png': firstScreenshotBlob
+            'image/png': compositeBlob
           })
         ]);
         saveAnnotations([]);
         setActiveCard(null);
-        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''} (+ screenshot) for AI!`);
+        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''} (+ screenshot strip)!`);
         return;
       }
     } catch (err) {
