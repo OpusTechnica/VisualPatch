@@ -33,7 +33,7 @@
   "module": "index.mjs",
   "types": "index.d.ts",
   "bin": {
-    "visualpatch": "./bin/cli.js"
+    "visualpatch": "bin/cli.js"
   },
   "files": [
     "bin",
