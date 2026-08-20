@@ -255,6 +255,19 @@ export default function DevAnnotator() {
 
   // Fast, lag-free screenshot capture
   const captureAreaSnapshot = async (cropBox) => {
+    // Hide annotator UI roots before taking snapshot
+    const roots = [
+      document.getElementById('dev-annotator-fixed-root'),
+      document.getElementById('dev-annotator-pins-root'),
+      document.getElementById('visualpatch-host'),
+      document.getElementById('visualpatch-pins-layer')
+    ].filter(Boolean);
+    roots.forEach((r) => (r.style.visibility = 'hidden'));
+
+    const restoreRoots = () => {
+      roots.forEach((r) => (r.style.visibility = 'visible'));
+    };
+
     // 1. Try Native GPU Tab Capture if running inside Chrome/Edge Extension context
     const isExtension = typeof chrome !== 'undefined' && Boolean(chrome.runtime?.id);
     if (isExtension && chrome.runtime?.sendMessage) {
@@ -262,11 +275,12 @@ export default function DevAnnotator() {
         const res = await Promise.race([
           new Promise((resolve) => {
             chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+              restoreRoots();
               if (chrome.runtime.lastError) resolve(null);
               else resolve(response);
             });
           }),
-          new Promise((resolve) => setTimeout(() => resolve(null), 150)) // Fast 150ms timeout
+          new Promise((resolve) => setTimeout(() => { restoreRoots(); resolve(null); }, 120))
         ]);
 
         if (res && res.success && res.dataUrl) {
@@ -287,12 +301,14 @@ export default function DevAnnotator() {
               );
               resolve(cropCanvas.toDataURL('image/jpeg', 0.9));
             };
-            img.onerror = () => resolve(null);
+            img.onerror = () => { restoreRoots(); resolve(null); };
             img.src = res.dataUrl;
           });
           if (cropped) return cropped;
         }
-      } catch (e) {}
+      } catch (e) {
+        restoreRoots();
+      }
     }
 
     // 2. Standalone Fast Async Viewport Capture (Micro-Container Targeting: only snapshots 5-10 nodes, 0ms lag!)
@@ -323,6 +339,7 @@ export default function DevAnnotator() {
           return true;
         }
       });
+      restoreRoots();
 
       const sourceX = (cropBox.x - targetRect.left) * dpr;
       const sourceY = (cropBox.y - targetRect.top) * dpr;
@@ -330,18 +347,19 @@ export default function DevAnnotator() {
       const sourceH = cropBox.height * dpr;
 
       const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = Math.max(1, sourceW);
-      cropCanvas.height = Math.max(1, sourceH);
-      const ctx = cropCanvas.getContext('2d', { alpha: false });
+      cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
+      cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
+      const cropCtx = cropCanvas.getContext('2d', { alpha: false });
 
-      ctx.drawImage(
+      cropCtx.drawImage(
         canvas,
-        Math.max(0, sourceX), Math.max(0, sourceY), sourceW, sourceH,
-        0, 0, sourceW, sourceH
+        sourceX, sourceY, sourceW, sourceH,
+        0, 0, cropCanvas.width, cropCanvas.height
       );
 
-      return cropCanvas.toDataURL('image/jpeg', 0.85);
+      return cropCanvas.toDataURL('image/jpeg', 0.88);
     } catch (err) {
+      restoreRoots();
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
     }
@@ -399,7 +417,7 @@ export default function DevAnnotator() {
       setMarqueeBox({ startX, startY, currentX, currentY, x, y, width, height });
     };
 
-    const handleMouseUp = (e) => {
+    const handleMouseUp = async (e) => {
       if (!isMarqueeDraggingRef.current) return;
       isMarqueeDraggingRef.current = false;
 
@@ -447,6 +465,9 @@ export default function DevAnnotator() {
       const pinX = Math.round(x + scrollX + 16);
       const pinY = Math.round(y + scrollY + 16);
 
+      // 1. Capture clean screenshot immediately while DOM is clean (zero cards, zero popups)
+      const screenshotDataUrl = await captureAreaSnapshot(cropRect);
+
       const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
       const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
       const newAnnotation = {
@@ -458,30 +479,15 @@ export default function DevAnnotator() {
         note: '',
         x: pinX,
         y: pinY,
-        screenshot: 'pending',
+        screenshot: screenshotDataUrl || null,
         timestamp: new Date().toISOString()
       };
 
-      // 1. Instant 0ms UI feedback (Zero lag!)
+      // 2. Register annotation and open card with clean screenshot already ready
       const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
       setActiveCard(newAnnotation);
       showToast(`📸 Area pinned (#${nextNum})`);
-
-      // 2. Perform snapshot asynchronously without freezing the screen
-      setTimeout(async () => {
-        const screenshotDataUrl = await captureAreaSnapshot(cropRect);
-        if (screenshotDataUrl) {
-          setAnnotations((prev) => {
-            const withImage = prev.map((item) => (item.id === newId ? { ...item, screenshot: screenshotDataUrl } : item));
-            try {
-              localStorage.setItem(`visualpatch_notes_${window.location.pathname}`, JSON.stringify(withImage));
-            } catch (err) {}
-            return withImage;
-          });
-          setActiveCard((prev) => (prev && prev.id === newId ? { ...prev, screenshot: screenshotDataUrl } : prev));
-        }
-      }, 20);
     };
 
     window.addEventListener('contextmenu', handleContextMenu);

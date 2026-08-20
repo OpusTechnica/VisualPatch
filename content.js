@@ -964,21 +964,28 @@
     const roots = [
       host,
       pinsContainer,
+      document.getElementById('visualpatch-host'),
+      document.getElementById('visualpatch-pins-layer'),
       document.getElementById('dev-annotator-fixed-root'),
       document.getElementById('dev-annotator-pins-root')
     ].filter(Boolean);
 
-    // Ensure elements are unhidden in at most 60ms even if extension message is pending
-    const timer = setTimeout(() => {
-      roots.forEach(r => r.style.visibility = 'visible');
-    }, 60);
+    // Hide overlays BEFORE triggering the tab capture
+    roots.forEach((r) => (r.style.visibility = 'hidden'));
+
+    const restoreRoots = () => {
+      roots.forEach((r) => (r.style.visibility = 'visible'));
+    };
+
+    // Safety timer: restore visibility in at most 80ms
+    const timer = setTimeout(restoreRoots, 80);
 
     return new Promise((resolve) => {
       try {
         if (typeof chrome !== 'undefined' && chrome.runtime?.id && chrome.runtime?.sendMessage) {
           chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
             clearTimeout(timer);
-            roots.forEach(r => r.style.visibility = 'visible');
+            restoreRoots();
 
             if (!response || !response.success || !response.dataUrl) {
               resolve(null);
@@ -1008,12 +1015,12 @@
           });
         } else {
           clearTimeout(timer);
-          roots.forEach(r => r.style.visibility = 'visible');
+          restoreRoots();
           resolve(null);
         }
       } catch (err) {
         clearTimeout(timer);
-        roots.forEach(r => r.style.visibility = 'visible');
+        restoreRoots();
         resolve(null);
       }
     });
@@ -1215,7 +1222,7 @@
     marqueeDim.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span><span>${Math.round(w)} × ${Math.round(h)}</span><span style="font-size: 9px; opacity: 0.6; letter-spacing: 0.04em;">PX</span>`;
   });
 
-  window.addEventListener('mouseup', (e) => {
+  window.addEventListener('mouseup', async (e) => {
     if (!isMarqueeDragging || !isScreenshotMode) return;
     isMarqueeDragging = false;
 
@@ -1261,6 +1268,9 @@
     const pinX = Math.round(x + scrollX + 16);
     const pinY = Math.round(y + scrollY + 16);
 
+    // 1. Capture snapshot immediately while DOM is 100% clean (zero cards, zero popups)
+    const screenshotDataUrl = await captureAreaNative(cropRect);
+
     const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const newAnnotation = {
       id: newId,
@@ -1271,49 +1281,21 @@
       note: '',
       x: pinX,
       y: pinY,
-      screenshot: 'pending',
+      screenshot: screenshotDataUrl || null,
       timestamp: new Date().toISOString()
     };
 
-    // 1. Instant 0ms UI update
+    // 2. Register annotation and render pin
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
-    setTimeout(() => {
-      const pins = pinsContainer.querySelectorAll('.vp-pin');
-      const lastPin = pins[pins.length - 1];
-      if (lastPin) openNoteCard(newAnnotation, lastPin);
-    }, 30);
+    // 3. Open note card with clean screenshot already attached and ready
+    const pins = pinsContainer.querySelectorAll('.vp-pin');
+    const lastPin = pins[pins.length - 1];
+    if (lastPin) openNoteCard(newAnnotation, lastPin);
 
     showToast(`📸 Area pinned (#${newAnnotation.number})`);
-
-    // 2. Perform snapshot asynchronously without freezing the UI
-    setTimeout(async () => {
-      const screenshotDataUrl = await captureAreaNative(cropRect);
-      if (screenshotDataUrl) {
-        newAnnotation.screenshot = screenshotDataUrl;
-        saveStorage();
-        renderPins();
-
-        // Update placeholder if card is currently open for this item
-        const placeholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (placeholder) {
-          const thumbBox = document.createElement('div');
-          thumbBox.className = 'vp-thumbnail-box';
-          thumbBox.innerHTML = `
-            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${screenshotDataUrl}" alt="Captured Area" />
-            <div class="vp-thumbnail-actions">
-              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
-              <a class="vp-pill-action-btn" href="${screenshotDataUrl}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
-            </div>
-          `;
-          placeholder.replaceWith(thumbBox);
-          thumbBox.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(screenshotDataUrl));
-          thumbBox.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(screenshotDataUrl));
-        }
-      }
-    }, 20);
   });
 
   // Helper: Create a single auto-stitched composite image strip for multiple screenshots
