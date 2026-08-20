@@ -1462,15 +1462,17 @@ export default function DevAnnotator() {
                 right: position.x === null ? '24px' : 'auto',
                 zIndex: 2147483647,
                 display: 'inline-flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '4px 6px',
-                background: 'rgba(12, 14, 18, 0.92)',
+                gap: '5px',
+                padding: '6px 4px',
+                width: '38px',
+                background: 'rgba(12, 14, 18, 0.94)',
                 backdropFilter: 'blur(20px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                 border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: '9999px',
-                boxShadow: '0 16px 40px -6px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.18)',
+                boxShadow: '0 16px 40px -6px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.2)',
                 color: '#f7f8f8',
                 pointerEvents: 'auto',
                 userSelect: 'none',
@@ -1482,9 +1484,11 @@ export default function DevAnnotator() {
                 onMouseDown={handleMouseDown}
                 style={{
                   display: 'inline-flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '4px 8px',
+                  gap: '3px',
+                  padding: '5px 4px',
+                  width: '30px',
                   borderRadius: '9999px',
                   background: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -1495,20 +1499,11 @@ export default function DevAnnotator() {
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
                 title="Drag to reposition toolbar anywhere"
               >
-                <svg width="8" height="12" viewBox="0 0 8 12" fill="none" opacity="0.65">
-                  <circle cx="2" cy="2" r="1" fill="#ffffff" />
-                  <circle cx="6" cy="2" r="1" fill="#ffffff" />
-                  <circle cx="2" cy="6" r="1" fill="#ffffff" />
-                  <circle cx="6" cy="6" r="1" fill="#ffffff" />
-                  <circle cx="2" cy="10" r="1" fill="#ffffff" />
-                  <circle cx="6" cy="10" r="1" fill="#ffffff" />
-                </svg>
-
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
                 <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>V</span>
               </div>
 
-              <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 2px' }} />
+              <div style={{ width: '18px', height: '1px', background: 'rgba(255, 255, 255, 0.12)', margin: '2px 0' }} />
 
               {/* 1. Inspect Mode Crosshair Button */}
               <button

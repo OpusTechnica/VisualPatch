@@ -65,27 +65,29 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
     }
 
-    /* Floating Toolbar (Linear Glass Dock) */
+    /* Floating Toolbar (Vertical Linear Glass Dock) */
     .vp-toolbar {
       position: fixed;
       bottom: 24px;
       right: 24px;
       z-index: 2147483647;
       display: inline-flex;
+      flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 4px 6px;
-      background: rgba(12, 14, 18, 0.92);
+      gap: 5px;
+      padding: 6px 4px;
+      background: rgba(12, 14, 18, 0.94);
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 9999px;
-      box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.18);
+      box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.2);
       color: #f7f8f8;
       pointer-events: auto;
       user-select: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
       touch-action: none;
+      width: 38px;
     }
 
     .vp-toolbar.vp-dragging {
@@ -98,14 +100,16 @@
     /* Drag Handle / Brand Badge */
     .vp-brand-badge {
       display: inline-flex;
+      flex-direction: column;
       align-items: center;
-      gap: 5px;
-      padding: 4px 8px;
+      gap: 3px;
+      padding: 5px 4px;
       border-radius: 9999px;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.08);
       cursor: grab;
       transition: background-color 0.15s ease;
+      width: 30px;
     }
 
     .vp-brand-badge:hover {
@@ -664,20 +668,10 @@
   }
   toolbar.innerHTML = `
     <div class="vp-brand-badge" id="visualpatch-brand-btn" title="Drag to move toolbar anywhere">
-      <div class="vp-drag-dots">
-        <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-          <circle cx="2" cy="2" r="1" fill="#ffffff" />
-          <circle cx="6" cy="2" r="1" fill="#ffffff" />
-          <circle cx="2" cy="6" r="1" fill="#ffffff" />
-          <circle cx="6" cy="6" r="1" fill="#ffffff" />
-          <circle cx="2" cy="10" r="1" fill="#ffffff" />
-          <circle cx="6" cy="10" r="1" fill="#ffffff" />
-        </svg>
-      </div>
       <span class="vp-brand-dot"></span>
-      <span style="font-weight: 800; font-size: 11px;">V</span>
+      <span style="font-weight: 800; font-size: 11px; color: #ffffff;">V</span>
     </div>
-    <div style="width: 1px; height: 18px; background: rgba(255, 255, 255, 0.1); margin: 0 2px;"></div>
+    <div style="width: 18px; height: 1px; background: rgba(255, 255, 255, 0.12); margin: 2px 0;"></div>
     <button class="vp-btn-icon" id="visualpatch-btn-inspect" title="Inspect & Drop Pin (Esc / Alt+D)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
