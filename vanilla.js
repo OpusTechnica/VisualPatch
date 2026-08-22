@@ -4,11 +4,27 @@
  * Features: Element Inspection, Area Screenshot Marquee Tool, Dynamic Anchors, Linear/Apple Glass UI
  */
 (function () {
-  const isLocal = ['localhost', '127.0.0.1', '0.0.0.0', '::1', ''].includes(window.location.hostname) || 
-                  window.location.hostname.endsWith('.local') || 
-                  window.location.hostname.endsWith('.internal') ||
-                  window.location.hostname === 'localhost' ||
-                  window.location.port !== '';
+  const hostname = window.location.hostname || '';
+  const port = window.location.port || '';
+  const protocol = window.location.protocol || '';
+
+  // Comprehensive dev environment detection (all ports, localhost, loopback, private LAN IPs, dev domains, local files)
+  const isLocal =
+    ['localhost', '127.0.0.1', '0.0.0.0', '::1', ''].includes(hostname) ||
+    port !== '' ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal') ||
+    hostname.endsWith('.test') ||
+    hostname.endsWith('.dev') ||
+    hostname.endsWith('.localhost') ||
+    /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname) ||
+    hostname.includes('.nip.io') ||
+    hostname.includes('.sslip.io') ||
+    hostname.includes('ngrok') ||
+    hostname.includes('loca.lt') ||
+    hostname.includes('trycloudflare.com') ||
+    protocol === 'file:';
+
   if (!isLocal) return;
 
   if (window.__visualpatch_loaded || window.__visualpatch_in_app_active || document.getElementById('dev-annotator-fixed-root')) return;
@@ -33,11 +49,30 @@
   let isMarqueeDragging = false;
   let marqueeStartX = 0, marqueeStartY = 0;
 
-  // Load Saved Position
+  // Viewport Boundary Sanitizer (Prevents off-screen toolbar rendering)
+  function sanitizePos(pos) {
+    if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return { x: null, y: null };
+    }
+    const margin = 16;
+    const dockWidth = 44;
+    const dockHeight = 240;
+    const maxX = Math.max(margin, window.innerWidth - dockWidth - margin);
+    const maxY = Math.max(margin, window.innerHeight - dockHeight - margin);
+
+    if (pos.x < margin || pos.x > maxX || pos.y < margin || pos.y > maxY) {
+      return { x: null, y: null };
+    }
+    return { x: pos.x, y: pos.y };
+  }
+
+  // Load Saved Position & Validate
   try {
     const savedPos = localStorage.getItem('visualpatch_toolbar_pos');
-    if (savedPos) currentPos = JSON.parse(savedPos);
-  } catch (e) {}
+    if (savedPos) currentPos = sanitizePos(JSON.parse(savedPos));
+  } catch (e) {
+    currentPos = { x: null, y: null };
+  }
 
   // Create Shadow Root Host
   const host = document.createElement('div');
@@ -46,12 +81,21 @@
   
   function mountHost() {
     if (!document.body) {
-      document.addEventListener('DOMContentLoaded', mountHost);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', mountHost, { once: true });
+      }
       return;
     }
-    document.body.appendChild(host);
+    if (!document.body.contains(host)) {
+      document.body.appendChild(host);
+    }
   }
   mountHost();
+
+  // Re-verify mounting after window load & SPA framework hydration
+  window.addEventListener('load', mountHost);
+  setTimeout(mountHost, 500);
+  setTimeout(mountHost, 1500);
 
   const shadow = host.attachShadow({ mode: 'open' });
 
@@ -1650,6 +1694,49 @@
       showToast('All pins cleared');
     }
   });
+
+  // Dynamic Resize Boundary Check (Keep toolbar in viewport)
+  window.addEventListener('resize', () => {
+    if (currentPos.x !== null && currentPos.y !== null) {
+      const safe = sanitizePos(currentPos);
+      if (safe.x === null) {
+        currentPos = { x: null, y: null };
+        toolbar.style.left = 'auto';
+        toolbar.style.top = 'auto';
+        toolbar.style.right = '24px';
+        toolbar.style.bottom = '24px';
+        try { localStorage.removeItem('visualpatch_toolbar_pos'); } catch (e) {}
+      } else {
+        toolbar.style.left = `${safe.x}px`;
+        toolbar.style.top = `${safe.y}px`;
+      }
+    }
+  });
+
+  // Direct Chrome Extension Message Listener
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+      if (req.action === 'SHOW_TOOLBAR' || req.action === 'TOGGLE_TOOLBAR') {
+        toggleVisibility(true);
+        if (req.resetPosition || currentPos.x === null || currentPos.x > window.innerWidth || currentPos.y > window.innerHeight) {
+          currentPos = { x: null, y: null };
+          toolbar.style.left = 'auto';
+          toolbar.style.top = 'auto';
+          toolbar.style.right = '24px';
+          toolbar.style.bottom = '24px';
+          try { localStorage.removeItem('visualpatch_toolbar_pos'); } catch (e) {}
+        }
+        sendResponse({ success: true, isVisible: true });
+      } else if (req.action === 'TOGGLE_INSPECT') {
+        toggleInspect();
+        sendResponse({ success: true, isInspectMode });
+      } else if (req.action === 'TOGGLE_SCREENSHOT') {
+        toggleScreenshot();
+        sendResponse({ success: true, isScreenshotMode });
+      }
+      return true;
+    });
+  }
 
   // Initialize
   loadSaved();

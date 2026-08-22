@@ -45,14 +45,45 @@ export default function DevAnnotator() {
     setTimeout(() => setToastMsg(''), 2800);
   };
 
+  // Viewport Boundary Sanitizer
+  const sanitizePos = (pos) => {
+    if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return { x: null, y: null };
+    }
+    const margin = 16;
+    const dockWidth = 44;
+    const dockHeight = 240;
+    const maxX = Math.max(margin, window.innerWidth - dockWidth - margin);
+    const maxY = Math.max(margin, window.innerHeight - dockHeight - margin);
+
+    if (pos.x < margin || pos.x > maxX || pos.y < margin || pos.y > maxY) {
+      return { x: null, y: null };
+    }
+    return { x: pos.x, y: pos.y };
+  };
+
   // Load annotations from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`visualpatch_notes_${window.location.pathname}`);
       if (saved) setAnnotations(JSON.parse(saved));
       const savedPos = localStorage.getItem('visualpatch_toolbar_pos');
-      if (savedPos) setPosition(JSON.parse(savedPos));
+      if (savedPos) setPosition(sanitizePos(JSON.parse(savedPos)));
     } catch (e) {}
+
+    const handleResize = () => {
+      setPosition((prev) => {
+        if (prev.x === null || prev.y === null) return prev;
+        const safe = sanitizePos(prev);
+        if (safe.x === null) {
+          try { localStorage.removeItem('visualpatch_toolbar_pos'); } catch (err) {}
+        }
+        return safe;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const saveAnnotations = (newAnnotations) => {
