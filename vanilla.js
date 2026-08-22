@@ -62,10 +62,11 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Floating Toolbar (Vertical Linear Glass Dock) */
+    /* Floating Toolbar (Vertical Obsidian Glass Dock) */
     .vp-toolbar {
       position: fixed;
       bottom: 24px;
@@ -76,23 +77,23 @@
       align-items: center;
       gap: 5px;
       padding: 6px 4px;
-      background: rgba(12, 14, 18, 0.94);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(14, 16, 20, 0.94);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 9999px;
-      box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.2);
-      color: #f7f8f8;
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
       pointer-events: auto;
       user-select: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       touch-action: none;
       width: 38px;
     }
 
     .vp-toolbar.vp-dragging {
-      opacity: 0.92;
-      box-shadow: 0 20px 48px rgba(0, 113, 227, 0.6);
+      opacity: 0.94;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       border-color: #0071e3;
       cursor: grabbing !important;
     }
@@ -100,39 +101,25 @@
     /* Drag Handle / Brand Badge */
     .vp-brand-badge {
       display: inline-flex;
-      flex-direction: column;
       align-items: center;
-      gap: 3px;
+      justify-content: center;
       padding: 5px 4px;
       border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       cursor: grab;
-      transition: background-color 0.15s ease;
+      transition: background-color 0.15s ease, transform 0.15s ease;
       width: 30px;
+      height: 30px;
     }
 
     .vp-brand-badge:hover {
-      background-color: rgba(255, 255, 255, 0.09);
+      background-color: rgba(255, 255, 255, 0.08);
     }
 
     .vp-brand-badge:active {
       cursor: grabbing;
-    }
-
-    .vp-drag-dots {
-      opacity: 0.65;
-      display: flex;
-      align-items: center;
-    }
-
-    .vp-brand-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #38bdf8;
-      box-shadow: 0 0 8px #38bdf8;
-      flex-shrink: 0;
+      transform: scale(0.96);
     }
 
     .vp-btn-icon {
@@ -140,56 +127,55 @@
       height: 30px;
       border-radius: 50%;
       border: 1px solid transparent;
-      background: rgba(255, 255, 255, 0.04);
-      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
 
     .vp-btn-icon:hover {
-      transform: scale(1.08);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       color: #ffffff;
+      transform: translateY(-1px);
     }
 
     .vp-btn-icon:active {
-      transform: scale(0.94);
+      transform: scale(0.95);
     }
 
     .vp-btn-active {
-      background: rgba(0, 113, 227, 0.28) !important;
+      background: #0071e3 !important;
       border-color: #0071e3 !important;
-      color: #38bdf8 !important;
-      box-shadow: 0 0 12px rgba(0, 113, 227, 0.45);
+      color: #ffffff !important;
     }
 
     .vp-btn-copy-has-pins {
-      background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%) !important;
-      border-color: rgba(0, 113, 227, 0.5) !important;
+      background: #0071e3 !important;
+      border-color: rgba(255, 255, 255, 0.15) !important;
       color: #ffffff !important;
-      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.4);
     }
 
     .vp-badge-count {
       position: absolute;
-      top: -4px;
-      right: -4px;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
+      top: -3px;
+      right: -3px;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 3.5px;
       border-radius: 9999px;
       background: #ffffff;
       color: #0071e3;
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 800;
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     }
 
     /* Collapsed Dynamic Island Capsule */
@@ -202,32 +188,36 @@
       align-items: center;
       gap: 7px;
       padding: 6px 12px;
-      background: rgba(12, 14, 18, 0.92);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(0, 113, 227, 0.45);
+      background: rgba(14, 16, 20, 0.94);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 9999px;
       color: #ffffff;
-      font-size: 11.5px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 600;
       cursor: grab;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 14px rgba(0, 113, 227, 0.3);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       pointer-events: auto;
       user-select: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
     }
 
     .vp-collapsed-pill:hover {
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 113, 227, 0.5);
+      background: rgba(22, 25, 33, 0.96);
+      border-color: rgba(0, 113, 227, 0.4);
+    }
+
+    .vp-collapsed-pill:active {
+      transform: scale(0.97);
     }
 
     /* Precision Highlighter */
     .vp-highlighter {
       position: fixed;
-      border: 2px solid #0071e3;
-      background: transparent;
-      box-shadow: 0 0 0 1px rgba(0, 113, 227, 0.45), inset 0 0 0 1px rgba(0, 113, 227, 0.25);
-      border-radius: 6px;
+      border: 1.5px solid #0071e3;
+      background: rgba(0, 113, 227, 0.04);
+      border-radius: 4px;
       pointer-events: none;
       z-index: 2147483640;
       transition: all 0.05s ease;
@@ -238,25 +228,25 @@
       position: absolute;
       top: -24px;
       left: -2px;
-      background: rgba(15, 17, 21, 0.94);
-      border: 1px solid rgba(0, 113, 227, 0.5);
-      color: #38bdf8;
-      font-size: 10.5px;
+      background: rgba(14, 16, 20, 0.95);
+      border: 1px solid rgba(0, 113, 227, 0.4);
+      color: #0071e3;
+      font-size: 10px;
       font-weight: 600;
-      font-family: monospace;
-      padding: 2px 7px;
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      padding: 1.5px 6.5px;
       border-radius: 4px;
       white-space: nowrap;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       pointer-events: none;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
     }
 
     /* Marquee Area Selection Layer (CleanShot X / macOS Studio Grade) */
     .vp-marquee-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(1.5px);
       -webkit-backdrop-filter: blur(1.5px);
       cursor: crosshair;
@@ -269,7 +259,7 @@
       position: fixed;
       border: 1.5px solid rgba(255, 255, 255, 0.95);
       background: transparent;
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 99999px rgba(0, 0, 0, 0.52), 0 12px 40px rgba(0, 113, 227, 0.25);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 99999px rgba(14, 16, 20, 0.52);
       border-radius: 2px;
       pointer-events: none;
       display: none;
@@ -279,17 +269,17 @@
       position: absolute;
       bottom: -34px;
       right: 0;
-      background: rgba(10, 12, 16, 0.92);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(14, 16, 20, 0.95);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 9999px;
       color: #f8fafc;
-      font-size: 11px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10.5px;
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
       font-weight: 600;
-      padding: 3px 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      padding: 2.5px 9px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
@@ -299,53 +289,55 @@
     /* Pin Marker */
     .vp-pin {
       position: absolute;
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%);
+      background: #0071e3;
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(0, 113, 227, 0.25);
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       cursor: pointer;
       z-index: 2147483642;
       pointer-events: auto;
       transform: translate(-50%, -50%);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-    }
-
-    .vp-pin.vp-pin-screenshot {
-      background: linear-gradient(135deg, #38bdf8 0%, #0071e3 100%);
-      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(56, 189, 248, 0.3);
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
     }
 
     .vp-pin:hover {
-      transform: translate(-50%, -50%) scale(1.18);
+      transform: translate(-50%, -50%) scale(1.15);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .vp-pin:active {
+      transform: translate(-50%, -50%) scale(0.96);
     }
 
     /* Linear / Apple Glass Modal Card */
     .vp-card {
       position: fixed;
-      width: 345px;
+      width: 340px;
       background: rgba(14, 16, 20, 0.96);
       backdrop-filter: blur(28px) saturate(190%);
       -webkit-backdrop-filter: blur(28px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 16px;
-      box-shadow: 0 28px 56px -10px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 24px rgba(0, 113, 227, 0.22);
-      color: #f7f8f8;
-      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
+      padding: 14px 16px;
       z-index: 2147483648;
       pointer-events: auto;
       user-select: none;
-      animation: vp-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: vp-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes vp-pop {
-      from { transform: scale(0.96) translateY(6px); opacity: 0; }
+      from { transform: scale(0.97) translateY(4px); opacity: 0; }
       to { transform: scale(1) translateY(0); opacity: 1; }
     }
 
@@ -353,33 +345,33 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 10px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     }
 
     .vp-card-pin-pill {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 8px;
-      border-radius: 9999px;
-      background: rgba(0, 113, 227, 0.22);
-      border: 1px solid rgba(0, 113, 227, 0.45);
-      color: #38bdf8;
-      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(0, 113, 227, 0.08);
+      border: 1px solid rgba(0, 113, 227, 0.25);
+      color: #0071e3;
+      font-size: 10.5px;
       font-weight: 700;
-      font-family: monospace;
-      letter-spacing: 0.02em;
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      letter-spacing: 0.04em;
     }
 
     .vp-card-close {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       color: #94a3b8;
       cursor: pointer;
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -389,19 +381,19 @@
 
     .vp-card-close:hover {
       color: #ffffff;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .vp-card-preview {
-      font-size: 11.5px;
-      color: #cbd5e1;
+      font-size: 11px;
+      color: #94a3b8;
       margin-bottom: 10px;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 7px 10px;
-      border-radius: 8px;
-      border-left: 3px solid #0071e3;
-      font-family: monospace;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 6px 9px;
+      border-radius: 7px;
+      border-left: 2.5px solid #0071e3;
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -409,17 +401,17 @@
 
     .vp-thumbnail-box {
       position: relative;
-      margin-bottom: 12px;
-      border-radius: 10px;
+      margin-bottom: 10px;
+      border-radius: 9px;
       overflow: hidden;
-      border: 1px solid rgba(0, 113, 227, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(0, 0, 0, 0.6);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
     }
 
     .vp-thumbnail-img {
       width: 100%;
-      height: 110px;
+      height: 100px;
       object-fit: cover;
       display: block;
       cursor: zoom-in;
@@ -427,45 +419,49 @@
 
     .vp-thumbnail-actions {
       position: absolute;
-      top: 6px;
-      right: 6px;
+      top: 5px;
+      right: 5px;
       display: flex;
       gap: 4px;
     }
 
     .vp-pill-action-btn {
-      padding: 3px 7px;
+      padding: 2.5px 6.5px;
       border-radius: 5px;
-      background: rgba(12, 14, 18, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(14, 16, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #ffffff;
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       backdrop-filter: blur(8px);
+      transition: background 0.15s ease;
+    }
+
+    .vp-pill-action-btn:hover {
+      background: rgba(26, 31, 42, 0.95);
     }
 
     .vp-textarea {
       width: 100%;
-      height: 76px;
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 10px;
-      color: #ffffff;
-      padding: 10px 12px;
-      font-size: 13px;
+      height: 72px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 8px 10px;
+      font-size: 12.5px;
       line-height: 1.45;
       resize: vertical;
       outline: none;
-      margin-bottom: 14px;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      margin-bottom: 12px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      transition: border-color 0.15s ease;
     }
 
     .vp-textarea:focus {
       border-color: #0071e3;
-      box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.45), inset 0 2px 4px rgba(0, 0, 0, 0.6);
     }
 
     .vp-card-actions {
@@ -475,44 +471,51 @@
     }
 
     .vp-btn-delete {
-      padding: 6px 11px;
-      border-radius: 8px;
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      background: rgba(239, 68, 68, 0.08);
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.06);
       color: #f87171;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .vp-btn-delete:hover {
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .vp-btn-delete:active {
+      transform: scale(0.96);
+    }
+
+    .vp-btn-save {
+      padding: 5.5px 13px;
+      border-radius: 7px;
+      border: none;
+      background: #0071e3 !important;
+      color: #ffffff !important;
       font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      transition: all 0.15s ease;
-    }
-
-    .vp-btn-delete:hover {
-      background: rgba(239, 68, 68, 0.18);
-      border-color: rgba(239, 68, 68, 0.45);
-    }
-
-    .vp-btn-save {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: none;
-      background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%) !important;
-      color: #ffffff !important;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45);
+      box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
       transition: all 0.15s ease;
     }
 
     .vp-btn-save:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.6);
+      background: #005bb5 !important;
+    }
+
+    .vp-btn-save:active {
+      transform: scale(0.96);
     }
 
     /* Zoom Lightbox Modal */
@@ -535,11 +538,11 @@
       position: relative;
       max-width: 92vw;
       max-height: 90vh;
-      background: #0f1115;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
+      background: #0b0d11;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9), 0 0 32px rgba(0, 113, 227, 0.3);
+      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       cursor: default;
     }
 
@@ -553,26 +556,26 @@
     /* Toast */
     .vp-toast {
       position: fixed;
-      top: 24px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(-10px);
-      background: rgba(12, 14, 18, 0.94);
+      background: rgba(14, 16, 20, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: #ffffff;
-      padding: 7px 16px;
+      padding: 6px 14px;
       border-radius: 9999px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 113, 227, 0.3);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       z-index: 2147483647;
       pointer-events: none;
       display: inline-flex;
       align-items: center;
       gap: 7px;
       opacity: 0;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .vp-toast.show {
@@ -668,12 +671,17 @@
   }
   toolbar.innerHTML = `
     <div class="vp-brand-badge" id="visualpatch-brand-btn" title="Drag to move toolbar anywhere">
-      <span class="vp-brand-dot"></span>
-      <span style="font-weight: 800; font-size: 11px; color: #ffffff;">V</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display: block;">
+        <path d="M3 9V3H9" stroke="#0071E3" stroke-width="2.8" stroke-linecap="square"/>
+        <path d="M21 15V21H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="square"/>
+        <path d="M7 8L12 17L17 8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
     </div>
-    <div style="width: 18px; height: 1px; background: rgba(255, 255, 255, 0.12); margin: 2px 0;"></div>
+    <div style="width: 16px; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0;"></div>
     <button class="vp-btn-icon" id="visualpatch-btn-inspect" title="Inspect & Drop Pin (Esc / Alt+D)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10" />
         <line x1="22" y1="12" x2="18" y2="12" />
         <line x1="6" y1="12" x2="2" y2="12" />
@@ -683,26 +691,26 @@
       </svg>
     </button>
     <button class="vp-btn-icon" id="visualpatch-btn-screenshot" title="Take Area Screenshot (Press S)">
-      <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
         <circle cx="12" cy="13" r="4" />
       </svg>
     </button>
     <button class="vp-btn-icon" id="visualpatch-btn-copy" title="Copy annotations for AI (Ctrl+C)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
       </svg>
       <span class="vp-badge-count" id="visualpatch-count" style="display: none;">0</span>
     </button>
     <button class="vp-btn-icon" id="visualpatch-btn-clear" title="Clear all pins on this page">
-      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="3 6 5 6 21 6" />
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       </svg>
     </button>
     <button class="vp-btn-icon" id="visualpatch-btn-minimize" title="Hide toolbar (Alt+T)">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
       </svg>
@@ -721,8 +729,14 @@
     collapsedPill.style.bottom = 'auto';
   }
   collapsedPill.innerHTML = `
-    <span class="vp-brand-dot"></span>
-    <span>V</span>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="display: block;">
+      <path d="M3 9V3H9" stroke="#0071E3" stroke-width="2.8" stroke-linecap="square"/>
+      <path d="M21 15V21H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="square"/>
+      <path d="M7 8L12 17L17 8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <span style="font-size: 11px; font-weight: 700; letter-spacing: -0.01em;">VisualPatch</span>
     <span class="vp-badge-count" id="visualpatch-pill-count" style="display: none; position: static; margin-left: 2px;">0</span>
   `;
   shadow.appendChild(collapsedPill);

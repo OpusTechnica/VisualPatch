@@ -1467,43 +1467,48 @@ export default function DevAnnotator() {
                 gap: '5px',
                 padding: '6px 4px',
                 width: '38px',
-                background: 'rgba(12, 14, 18, 0.94)',
-                backdropFilter: 'blur(20px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                background: 'rgba(14, 16, 20, 0.94)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.09)',
                 borderRadius: '9999px',
-                boxShadow: '0 16px 40px -6px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 16px rgba(0, 113, 227, 0.2)',
-                color: '#f7f8f8',
+                boxShadow: '0 16px 36px -6px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                color: '#f8fafc',
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             >
-              {/* Drag Grip & Brand Mark (Compact 'V') */}
+              {/* Drag Grip & Official Brand Mark */}
               <div
                 onMouseDown={handleMouseDown}
                 style={{
                   display: 'inline-flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '3px',
+                  justifyContent: 'center',
                   padding: '5px 4px',
                   width: '30px',
+                  height: '30px',
                   borderRadius: '9999px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
                   cursor: 'grab',
-                  transition: 'background-color 0.15s ease'
+                  transition: 'background-color 0.15s ease, transform 0.15s ease'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.09)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)')}
                 title="Drag to reposition toolbar anywhere"
               >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: '#ffffff' }}>V</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                  <path d="M3 9V3H9" stroke="#0071E3" strokeWidth="2.8" strokeLinecap="square" />
+                  <path d="M21 15V21H15" stroke="#FFFFFF" strokeWidth="2.8" strokeLinecap="square" />
+                  <path d="M7 8L12 17L17 8" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" strokeWidth="1.6" strokeLinecap="round" />
+                  <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
               </div>
 
-              <div style={{ width: '18px', height: '1px', background: 'rgba(255, 255, 255, 0.12)', margin: '2px 0' }} />
+              <div style={{ width: '16px', height: '1px', background: 'rgba(255, 255, 255, 0.08)', margin: '2px 0' }} />
 
               {/* 1. Inspect Mode Crosshair Button */}
               <button
@@ -1516,32 +1521,31 @@ export default function DevAnnotator() {
                   height: '30px',
                   borderRadius: '50%',
                   border: isInspectMode ? '1px solid #0071e3' : '1px solid transparent',
-                  background: isInspectMode ? 'rgba(0, 113, 227, 0.28)' : 'rgba(255, 255, 255, 0.04)',
-                  color: isInspectMode ? '#38bdf8' : '#cbd5e1',
+                  background: isInspectMode ? '#0071e3' : 'rgba(255, 255, 255, 0.03)',
+                  color: isInspectMode ? '#ffffff' : '#94a3b8',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  boxShadow: isInspectMode ? '0 0 12px rgba(0, 113, 227, 0.45)' : 'none',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                   if (!isInspectMode) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                     e.currentTarget.style.color = '#ffffff';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                   if (!isInspectMode) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                    e.currentTarget.style.color = '#cbd5e1';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = '#94a3b8';
                   }
                 }}
                 title={isInspectMode ? 'Inspect Active · Click element to pin (Esc / Alt+D)' : 'Inspect & Drop Pin (Esc / Alt+D)'}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="22" y1="12" x2="18" y2="12" />
                   <line x1="6" y1="12" x2="2" y2="12" />
@@ -1551,7 +1555,7 @@ export default function DevAnnotator() {
                 </svg>
               </button>
 
-              {/* 2. Area Screenshot Marquee Tool Button (Option 2) */}
+              {/* 2. Area Screenshot Marquee Tool Button */}
               <button
                 onClick={() => {
                   setIsInspectMode(false);
@@ -1562,38 +1566,37 @@ export default function DevAnnotator() {
                   height: '30px',
                   borderRadius: '50%',
                   border: isScreenshotMode ? '1px solid #0071e3' : '1px solid transparent',
-                  background: isScreenshotMode ? 'rgba(0, 113, 227, 0.28)' : 'rgba(255, 255, 255, 0.04)',
-                  color: isScreenshotMode ? '#38bdf8' : '#cbd5e1',
+                  background: isScreenshotMode ? '#0071e3' : 'rgba(255, 255, 255, 0.03)',
+                  color: isScreenshotMode ? '#ffffff' : '#94a3b8',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  boxShadow: isScreenshotMode ? '0 0 12px rgba(0, 113, 227, 0.45)' : 'none',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                   if (!isScreenshotMode) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                     e.currentTarget.style.color = '#ffffff';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                   if (!isScreenshotMode) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                    e.currentTarget.style.color = '#cbd5e1';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = '#94a3b8';
                   }
                 }}
                 title={isScreenshotMode ? 'Area Screenshot Active · Drag box on screen (Press S)' : 'Take Area Screenshot (Press S)'}
               >
-                <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                   <circle cx="12" cy="13" r="4" fill={isScreenshotMode ? 'currentColor' : 'none'} />
                 </svg>
               </button>
 
-              {/* 3. Copy for AI Icon Button (Dual-Sheet Copy Icon + Dynamic Badge) */}
+              {/* 3. Copy for AI Icon Button */}
               <button
                 onClick={copyForAI}
                 style={{
@@ -1601,31 +1604,30 @@ export default function DevAnnotator() {
                   width: '30px',
                   height: '30px',
                   borderRadius: '50%',
-                  border: annotations.length ? '1px solid rgba(0, 113, 227, 0.5)' : '1px solid transparent',
-                  background: annotations.length ? 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)' : 'rgba(255, 255, 255, 0.04)',
+                  border: annotations.length ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid transparent',
+                  background: annotations.length ? '#0071e3' : 'rgba(255, 255, 255, 0.03)',
                   color: '#ffffff',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  boxShadow: annotations.length ? '0 2px 10px rgba(0, 113, 227, 0.4)' : 'none',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                   if (!annotations.length) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                   if (!annotations.length) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
                   }
                 }}
                 title={`Copy ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} for AI (Ctrl+C)`}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
@@ -1634,20 +1636,21 @@ export default function DevAnnotator() {
                   <span
                     style={{
                       position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      minWidth: '16px',
-                      height: '16px',
-                      padding: '0 4px',
+                      top: '-3px',
+                      right: '-3px',
+                      minWidth: '15px',
+                      height: '15px',
+                      padding: '0 3.5px',
                       borderRadius: '9999px',
                       background: '#ffffff',
                       color: '#0071e3',
-                      fontSize: '9.5px',
+                      fontSize: '9px',
                       fontWeight: 800,
+                      fontFamily: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.5)'
                     }}
                   >
                     {annotations.length}
@@ -1663,23 +1666,23 @@ export default function DevAnnotator() {
                   height: '30px',
                   borderRadius: '50%',
                   border: '1px solid transparent',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  color: '#cbd5e1',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  color: '#94a3b8',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
                   e.currentTarget.style.color = '#f87171';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                  e.currentTarget.style.color = '#cbd5e1';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.color = '#94a3b8';
                 }}
                 title="Clear all pins on this page"
               >
@@ -1693,8 +1696,8 @@ export default function DevAnnotator() {
               <button
                 onClick={() => setIsVisible(false)}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '50%',
                   border: '1px solid transparent',
                   background: 'transparent',
@@ -1703,19 +1706,19 @@ export default function DevAnnotator() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                   e.currentTarget.style.color = '#ffffff';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.color = '#94a3b8';
                 }}
                 title="Minimize toolbar (Alt+T)"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -1726,6 +1729,7 @@ export default function DevAnnotator() {
             <div
               ref={pillRef}
               onMouseDown={handlePillMouseDown}
+              onDoubleClick={() => setIsVisible(true)}
               style={{
                 position: 'fixed',
                 left: position.x !== null ? `${position.x}px` : 'auto',
@@ -1737,38 +1741,45 @@ export default function DevAnnotator() {
                 alignItems: 'center',
                 gap: '7px',
                 padding: '6px 12px',
-                background: 'rgba(12, 14, 18, 0.92)',
-                backdropFilter: 'blur(20px) saturate(180%)',
-                border: '1px solid rgba(0, 113, 227, 0.45)',
+                background: 'rgba(14, 16, 20, 0.94)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '9999px',
                 color: '#ffffff',
-                fontSize: '11.5px',
-                fontWeight: 700,
+                fontSize: '11px',
+                fontWeight: 600,
                 cursor: 'grab',
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.7), 0 0 14px rgba(0, 113, 227, 0.3)',
+                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 113, 227, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.7), 0 0 14px rgba(0, 113, 227, 0.3)';
-              }}
-              title="Click to expand or drag to move anywhere (Alt+T)"
+              title="Drag anywhere · Double-click to expand"
             >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-              <span>V</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                <path d="M3 9V3H9" stroke="#0071E3" strokeWidth="2.8" strokeLinecap="square" />
+                <path d="M21 15V21H15" stroke="#FFFFFF" strokeWidth="2.8" strokeLinecap="square" />
+                <path d="M7 8L12 17L17 8" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" strokeWidth="1.6" strokeLinecap="round" />
+                <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '-0.01em' }}>VisualPatch</span>
               {annotations.length > 0 && (
                 <span
                   style={{
+                    minWidth: '15px',
+                    height: '15px',
+                    padding: '0 3.5px',
+                    borderRadius: '9999px',
                     background: '#0071e3',
                     color: '#ffffff',
-                    fontSize: '10px',
+                    fontSize: '9px',
                     fontWeight: 800,
-                    borderRadius: '9999px',
-                    padding: '0 5px',
+                    fontFamily: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     marginLeft: '2px'
                   }}
                 >

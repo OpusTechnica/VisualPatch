@@ -13,17 +13,16 @@
     }
 
     :root {
-      --bg-base: #090a0f;
-      --bg-card: rgba(18, 21, 28, 0.7);
-      --bg-card-hover: rgba(26, 31, 42, 0.85);
-      --border-subtle: rgba(255, 255, 255, 0.07);
-      --border-hover: rgba(56, 189, 248, 0.35);
-      --border-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      --bg-base: #0b0d11;
+      --bg-card: rgba(18, 21, 28, 0.75);
+      --bg-card-hover: rgba(26, 31, 42, 0.9);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(0, 113, 227, 0.4);
+      --border-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       --text-primary: #f8fafc;
       --text-secondary: #94a3b8;
       --text-muted: #64748b;
       --accent-blue: #0071e3;
-      --accent-cyan: #38bdf8;
       --accent-green: #10b981;
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", -system-ui, sans-serif;
       --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
@@ -41,15 +40,15 @@
       overflow: hidden;
     }
 
-    /* Ambient Subtle Top Rim Light */
+    /* Ambient Top Hairline Highlight */
     body::before {
       content: '';
       position: absolute;
       top: 0;
-      left: 10%;
-      right: 10%;
+      left: 0;
+      right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), rgba(0, 113, 227, 0.5), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
       pointer-events: none;
     }
 
@@ -66,37 +65,37 @@
     .vp-brand {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
     }
 
     .vp-icon-wrap {
-      width: 20px;
-      height: 20px;
-      border-radius: 5px;
-      background: linear-gradient(135deg, #0071e3, #0284c7);
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 10px rgba(0, 113, 227, 0.45);
     }
 
     .vp-title {
       font-size: 13px;
       font-weight: 600;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
       color: var(--text-primary);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
 
     .vp-badge {
       font-family: var(--font-mono);
       font-size: 9.5px;
       font-weight: 600;
-      color: var(--accent-cyan);
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.22);
+      color: var(--accent-blue);
+      background: rgba(0, 113, 227, 0.08);
+      border: 1px solid rgba(0, 113, 227, 0.25);
       padding: 1px 4.5px;
       border-radius: 4px;
       letter-spacing: 0.02em;
@@ -122,13 +121,6 @@
       height: 5px;
       border-radius: 50%;
       background: var(--accent-green);
-      box-shadow: 0 0 5px var(--accent-green);
-      animation: vp-glow 2.2s infinite ease-in-out;
-    }
-
-    @keyframes vp-glow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
     /* 2. Linear Interactive Command Section */
@@ -311,9 +303,12 @@
   <header class="vp-nav">
     <div class="vp-brand">
       <div class="vp-icon-wrap">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="m9 12 2 2 4-4" />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="display: block;">
+          <path d="M3 9V3H9" stroke="#0071E3" stroke-width="2.8" stroke-linecap="square"/>
+          <path d="M21 15V21H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="square"/>
+          <path d="M7 8L12 17L17 8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
+          <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
       </div>
       <div class="vp-title">
