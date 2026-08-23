@@ -25,7 +25,7 @@
 ### 🔄 The Zero-Window-Switching Live Loop
 
 <p align="center">
-  <img src="./assets/live-loop-flow.svg" alt="VisualPatch Zero-Window-Switching Live Loop" width="100%" />
+  <img src="./assets/visualpatch-live-loop.svg" alt="VisualPatch Zero-Window-Switching Live Loop" width="100%" />
 </p>
 
 | Step | Environment | What Happens Automatically |
