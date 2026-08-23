@@ -740,6 +740,12 @@
         <circle cx="12" cy="13" r="4" />
       </svg>
     </button>
+    <button class="vp-btn-icon" id="visualpatch-btn-send-agent" title="⚡ Send to Agent Inbox (Ctrl+Enter)" style="color: #ffffff;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+      <span class="vp-badge-count" id="visualpatch-agent-count" style="display: none; background: #ffffff; color: #0071e3;">0</span>
+    </button>
     <button class="vp-btn-icon" id="visualpatch-btn-copy" title="Copy annotations for AI (Ctrl+C)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -938,6 +944,55 @@
     return path.join(' > ');
   }
 
+  // Helper: Resolve React/Vue Component Name & Source File (Zero-Token Precision Grounding)
+  function getComponentSourceInfo(el) {
+    if (!el || !(el instanceof Element)) return { component: null, sourceFile: null };
+
+    let component = null;
+    let sourceFile = null;
+
+    if (el.getAttribute('data-source-file')) sourceFile = el.getAttribute('data-source-file');
+    if (el.getAttribute('data-component')) component = el.getAttribute('data-component');
+
+    try {
+      const fiberKey = Object.keys(el).find(
+        (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')
+      );
+      if (fiberKey) {
+        let fiber = el[fiberKey];
+        while (fiber) {
+          if (fiber._debugSource && !sourceFile) {
+            const fn = fiber._debugSource.fileName || '';
+            const line = fiber._debugSource.lineNumber;
+            const cleanPath = fn.replace(/^.*[\\\/](src[\\\/].*)$/, '$1').replace(/\\/g, '/');
+            sourceFile = line ? `${cleanPath}#L${line}` : cleanPath;
+          }
+
+          if (typeof fiber.type === 'function' && !component) {
+            const name = fiber.type.displayName || fiber.type.name;
+            if (name && !['Anonymous', 'Fragment', 'Consumer', 'Provider', 'Context'].includes(name)) {
+              component = name;
+            }
+          } else if (typeof fiber.type === 'string' && !component && fiber._debugOwner) {
+            const ownerName = fiber._debugOwner.type?.displayName || fiber._debugOwner.type?.name;
+            if (ownerName) component = ownerName;
+          }
+
+          if (component && sourceFile) break;
+          fiber = fiber.return;
+        }
+      }
+    } catch (err) {}
+
+    if ((!component || !sourceFile) && el.parentElement && el.parentElement !== document.body) {
+      const parentInfo = getComponentSourceInfo(el.parentElement);
+      if (!component) component = parentInfo.component;
+      if (!sourceFile) sourceFile = parentInfo.sourceFile;
+    }
+
+    return { component, sourceFile };
+  }
+
   // Load Saved Annotations from Storage
   function loadSaved() {
     const storageKey = `visualpatch_notes_${window.location.pathname}`;
@@ -962,19 +1017,28 @@
 
   function updateCount() {
     const countBadge = shadow.getElementById('visualpatch-count');
+    const agentBadge = shadow.getElementById('visualpatch-agent-count');
     const pillBadge = shadow.getElementById('visualpatch-pill-count');
     const copyBtn = shadow.getElementById('visualpatch-btn-copy');
+    const agentBtn = shadow.getElementById('visualpatch-btn-send-agent');
 
     if (annotations.length > 0) {
       countBadge.textContent = annotations.length;
       countBadge.style.display = 'flex';
+      if (agentBadge) {
+        agentBadge.textContent = annotations.length;
+        agentBadge.style.display = 'flex';
+      }
       pillBadge.textContent = annotations.length;
       pillBadge.style.display = 'inline-flex';
       copyBtn.classList.add('vp-btn-copy-has-pins');
+      if (agentBtn) agentBtn.classList.add('vp-btn-copy-has-pins');
     } else {
       countBadge.style.display = 'none';
+      if (agentBadge) agentBadge.style.display = 'none';
       pillBadge.style.display = 'none';
       copyBtn.classList.remove('vp-btn-copy-has-pins');
+      if (agentBtn) agentBtn.classList.remove('vp-btn-copy-has-pins');
     }
   }
 
@@ -1123,7 +1187,13 @@
             <span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
             PIN ${pinNumStr}
           </span>
-          <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">&lt;${item.tag}&gt;</span>
+          ${item.component ? `
+            <span style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); padding: 1px 6px; borderRadius: 4px; font-family: monospace;">
+              &lt;${item.component} /&gt;
+            </span>
+          ` : `
+            <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">&lt;${item.tag}&gt;</span>
+          `}
         </div>
         <button class="vp-card-close" id="visualpatch-card-close-btn" title="Close (Esc)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -1133,8 +1203,9 @@
         </button>
       </div>
 
-      <div class="vp-card-preview">
-        ${item.textSnippet ? `"${item.textSnippet}"` : item.selector}
+      <div class="vp-card-preview" style="font-size: 11px; font-family: monospace;">
+        ${item.sourceFile ? `<span style="color: #38bdf8; margin-right: 6px;">📄 ${item.sourceFile}</span>` : ''}
+        <span>${item.textSnippet ? `"${item.textSnippet}"` : item.selector}</span>
       </div>
 
       ${thumbnailHtml}
@@ -1152,9 +1223,16 @@
 
         <div style="display: flex; gap: 8px; align-items: center;">
           <button class="vp-card-close" id="visualpatch-btn-cancel-pin" style="width: auto; height: auto; padding: 6px 11px; border-radius: 8px; font-size: 12px;">Cancel</button>
-          <button class="vp-btn-save" id="visualpatch-btn-save-pin">
-            <span>Save Pin</span>
-            <span style="font-size: 10px; opacity: 0.8; font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 4px;">↵</span>
+          <button class="vp-btn-save" id="visualpatch-btn-save-pin" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #f8fafc;">
+            <span>Save</span>
+            <span style="font-size: 10px; opacity: 0.8; font-family: monospace; background: rgba(255,255,255,0.15); padding: 1px 4px; border-radius: 4px;">↵</span>
+          </button>
+          <button class="vp-btn-save" id="visualpatch-btn-card-send-agent" style="background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%); color: #ffffff; box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45); gap: 5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>Send to Agent</span>
+            <span style="font-size: 9px; opacity: 0.85; font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 3px;">Ctrl+↵</span>
           </button>
         </div>
       </div>
@@ -1193,6 +1271,11 @@
     card.querySelector('#visualpatch-btn-cancel-pin').addEventListener('click', () => cardsContainer.innerHTML = '');
     card.querySelector('#visualpatch-btn-save-pin').addEventListener('click', saveNote);
     card.querySelector('#visualpatch-btn-del-pin').addEventListener('click', deleteNote);
+    card.querySelector('#visualpatch-btn-card-send-agent').addEventListener('click', () => {
+      item.note = input.value.trim();
+      saveStorage();
+      sendToAgent();
+    });
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1313,6 +1396,7 @@
       return true;
     }) || document.body;
     const selector = getCssSelector(el);
+    const sourceInfo = getComponentSourceInfo(el);
     const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
     const scrollX = window.scrollX || window.pageXOffset || 0;
@@ -1329,6 +1413,8 @@
       number: currentPinNumber++,
       tag: el.tagName ? el.tagName.toLowerCase() : 'area',
       selector: selector || `area[${w}x${h}]`,
+      component: sourceInfo.component,
+      sourceFile: sourceInfo.sourceFile,
       textSnippet: textSnippet,
       note: '',
       x: pinX,
@@ -1530,6 +1616,105 @@
     });
   }
 
+  // Direct 0-Token AI Agent Bridge (Saves images to disk & populates agent inbox)
+  async function sendToAgent() {
+    const input = shadow.querySelector('#visualpatch-note-input');
+    if (input && annotations.length) {
+      const last = annotations[annotations.length - 1];
+      if (last && !last.note) last.note = input.value.trim();
+      saveStorage();
+      cardsContainer.innerHTML = '';
+    }
+
+    if (!annotations.length) {
+      showToast('No annotations yet · Drop pins or capture areas first');
+      return;
+    }
+
+    const count = annotations.length;
+    showToast(`⚡ Transmitting ${count} item${count > 1 ? 's' : ''} to Agent...`);
+
+    const payload = {
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+      items: annotations.map((item) => ({
+        number: item.number,
+        tag: item.tag,
+        selector: item.selector,
+        component: item.component || null,
+        sourceFile: item.sourceFile || null,
+        textSnippet: item.textSnippet,
+        note: item.note,
+        screenshot: item.screenshot
+      }))
+    };
+
+    let sent = false;
+
+    // 1. Try sending to Local Loopback Agent Bridge (127.0.0.1:44922)
+    try {
+      const bridgeRes = await fetch('http://127.0.0.1:44922/api/inbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (bridgeRes.ok) sent = true;
+    } catch (e) {}
+
+    // 2. Try sending to Dev Server Middleware
+    if (!sent) {
+      try {
+        const devRes = await fetch('/__visualpatch_inbox', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (devRes.ok) sent = true;
+      } catch (e) {}
+    }
+
+    // 3. Fallback: Copy clean Markdown + screenshot strip to clipboard
+    let md = `### 📌 VisualPatch UI Task Queue\n`;
+    md += `**Source URL:** \`${window.location.href}\`\n`;
+    md += `**Total Items:** ${count}\n\n`;
+
+    annotations.forEach((item, index) => {
+      md += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
+      if (item.component) md += `- **React Component:** \`<${item.component}>\`\n`;
+      if (item.sourceFile) md += `- **Source File:** \`${item.sourceFile}\`\n`;
+      if (item.textSnippet) md += `- **Rendered Text:** "${item.textSnippet}"\n`;
+      md += `- **Requested Change:** ${item.note || 'Inspect and refine component styling/layout.'}\n\n`;
+    });
+
+    try {
+      const compositeBlob = await createCompositeScreenshotBlob(annotations);
+      if (compositeBlob && navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([md], { type: 'text/plain' }),
+            'image/png': compositeBlob
+          })
+        ]);
+      } else {
+        await navigator.clipboard.writeText(md);
+      }
+    } catch (e) {
+      try { await navigator.clipboard.writeText(md); } catch (err) {}
+    }
+
+    annotations = [];
+    currentPinNumber = 1;
+    saveStorage();
+    renderPins();
+    cardsContainer.innerHTML = '';
+
+    if (sent) {
+      showToast(`⚡ Ingested into .visualpatch/inbox.md! Check agent.`);
+    } else {
+      showToast(`📋 Copied for AI (+ saved to clipboard)`);
+    }
+  }
+
   // DOM Event Listeners for Inspection & Pin Drop
   document.addEventListener('mousemove', (e) => {
     if (!isInspectMode || isScreenshotMode) return;
@@ -1575,6 +1760,7 @@
     const pinY = Math.round(e.pageY || rect.top + scrollY + 10);
 
     const selector = getCssSelector(el);
+    const sourceInfo = getComponentSourceInfo(el);
     const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
     const newAnnotation = {
@@ -1582,6 +1768,8 @@
       number: currentPinNumber++,
       tag: el.tagName.toLowerCase(),
       selector: selector,
+      component: sourceInfo.component,
+      sourceFile: sourceInfo.sourceFile,
       textSnippet: textSnippet,
       note: '',
       x: pinX,
@@ -1628,6 +1816,15 @@
       }
 
       toggleInspect();
+      return;
+    }
+
+    // Ctrl + Enter / Cmd + Enter: Instant Send to Agent (Even while typing in note card!)
+    const isEnterKey = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13;
+    if (isEnterKey && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      sendToAgent();
       return;
     }
 
@@ -1683,6 +1880,7 @@
   // Toolbar Button Click Handlers
   shadow.getElementById('visualpatch-btn-inspect').addEventListener('click', () => toggleInspect());
   shadow.getElementById('visualpatch-btn-screenshot').addEventListener('click', () => toggleScreenshot());
+  shadow.getElementById('visualpatch-btn-send-agent').addEventListener('click', sendToAgent);
   shadow.getElementById('visualpatch-btn-copy').addEventListener('click', copyForAI);
   shadow.getElementById('visualpatch-btn-clear').addEventListener('click', () => {
     if (annotations.length) {
@@ -1733,6 +1931,9 @@
       } else if (req.action === 'TOGGLE_SCREENSHOT') {
         toggleScreenshot();
         sendResponse({ success: true, isScreenshotMode });
+      } else if (req.action === 'SEND_TO_AGENT') {
+        sendToAgent();
+        sendResponse({ success: true });
       }
       return true;
     });

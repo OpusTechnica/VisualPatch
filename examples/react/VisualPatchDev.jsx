@@ -107,6 +107,7 @@ export default function DevAnnotator() {
   }, [activeCard]);
 
   const copyForAIRef = useRef(null);
+  const sendToAgentRef = useRef(null);
 
   // Global Keyboard Shortcuts (Capture Phase for Guaranteed Responsiveness)
   useEffect(() => {
@@ -136,8 +137,17 @@ export default function DevAnnotator() {
           return;
         }
 
-        // 2. Otherwise toggle inspect mode on/off
-        setIsInspectMode((prev) => !prev);
+        // 2. Otherwise toggle inspect off
+        setIsInspectMode(false);
+        return;
+      }
+
+      // Ctrl + Enter / Cmd + Enter: Instant Send to Agent (Even when typing in note card!)
+      const isEnterKey = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13;
+      if (isEnterKey && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (sendToAgentRef.current) sendToAgentRef.current();
         return;
       }
 
@@ -252,6 +262,7 @@ export default function DevAnnotator() {
       const pinY = Math.round(e.pageY || rect.top + scrollY + 10);
 
       const selector = getCssSelector(el);
+      const sourceInfo = getComponentSourceInfo(el);
       const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
       const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
@@ -260,6 +271,8 @@ export default function DevAnnotator() {
         number: nextNum,
         tag: el.tagName.toLowerCase(),
         selector: selector,
+        component: sourceInfo.component,
+        sourceFile: sourceInfo.sourceFile,
         textSnippet: textSnippet,
         note: '',
         x: pinX,
@@ -489,6 +502,7 @@ export default function DevAnnotator() {
         return true;
       }) || document.body;
       const selector = getCssSelector(el);
+      const sourceInfo = getComponentSourceInfo(el);
       const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
       const scrollX = window.scrollX || window.pageXOffset || 0;
@@ -506,6 +520,8 @@ export default function DevAnnotator() {
         number: nextNum,
         tag: el.tagName ? el.tagName.toLowerCase() : 'area',
         selector: selector || `area[${width}x${height}]`,
+        component: sourceInfo.component,
+        sourceFile: sourceInfo.sourceFile,
         textSnippet: textSnippet,
         note: '',
         x: pinX,
@@ -565,6 +581,58 @@ export default function DevAnnotator() {
       if (path.length > 3) break;
     }
     return path.join(' > ');
+  };
+
+  // Helper: Resolve React/Vue Component Name & Source File (Zero-Token Precision Grounding)
+  const getComponentSourceInfo = (el) => {
+    if (!el || !(el instanceof Element)) return { component: null, sourceFile: null };
+
+    let component = null;
+    let sourceFile = null;
+
+    // 1. Direct explicit attributes (Astro, Svelte, Vite data hooks)
+    if (el.getAttribute('data-source-file')) sourceFile = el.getAttribute('data-source-file');
+    if (el.getAttribute('data-component')) component = el.getAttribute('data-component');
+
+    // 2. React Internal Fiber Tree Inspection
+    try {
+      const fiberKey = Object.keys(el).find(
+        (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')
+      );
+      if (fiberKey) {
+        let fiber = el[fiberKey];
+        while (fiber) {
+          if (fiber._debugSource && !sourceFile) {
+            const fn = fiber._debugSource.fileName || '';
+            const line = fiber._debugSource.lineNumber;
+            const cleanPath = fn.replace(/^.*[\\\/](src[\\\/].*)$/, '$1').replace(/\\/g, '/');
+            sourceFile = line ? `${cleanPath}#L${line}` : cleanPath;
+          }
+
+          if (typeof fiber.type === 'function' && !component) {
+            const name = fiber.type.displayName || fiber.type.name;
+            if (name && !['Anonymous', 'Fragment', 'Consumer', 'Provider', 'Context'].includes(name)) {
+              component = name;
+            }
+          } else if (typeof fiber.type === 'string' && !component && fiber._debugOwner) {
+            const ownerName = fiber._debugOwner.type?.displayName || fiber._debugOwner.type?.name;
+            if (ownerName) component = ownerName;
+          }
+
+          if (component && sourceFile) break;
+          fiber = fiber.return;
+        }
+      }
+    } catch (err) {}
+
+    // 3. Bubble up to parent if leaf element doesn't have direct fiber
+    if ((!component || !sourceFile) && el.parentElement && el.parentElement !== document.body) {
+      const parentInfo = getComponentSourceInfo(el.parentElement);
+      if (!component) component = parentInfo.component;
+      if (!sourceFile) sourceFile = parentInfo.sourceFile;
+    }
+
+    return { component, sourceFile };
   };
 
   // Helper: Convert any data URL to pure image/png Blob for Clipboard API
@@ -824,6 +892,104 @@ export default function DevAnnotator() {
       });
   };
   copyForAIRef.current = copyForAI;
+
+  // Direct 0-Token AI Agent Bridge (Saves images to disk & populates agent inbox)
+  const sendToAgent = async () => {
+    let currentAnnotations = annotations;
+    if (activeCard) {
+      currentAnnotations = annotations.map((item) =>
+        item.id === activeCard.id ? { ...item, note: cardText.trim() } : item
+      );
+      saveAnnotations(currentAnnotations);
+      setActiveCard(null);
+    }
+
+    if (!currentAnnotations.length) {
+      showToast('No annotations yet · Drop pins or capture areas first');
+      return;
+    }
+
+    const count = currentAnnotations.length;
+    showToast(`⚡ Transmitting ${count} item${count > 1 ? 's' : ''} to Agent...`);
+
+    const payload = {
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+      items: currentAnnotations.map((item) => ({
+        number: item.number,
+        tag: item.tag,
+        selector: item.selector,
+        component: item.component || null,
+        sourceFile: item.sourceFile || null,
+        textSnippet: item.textSnippet,
+        note: item.note,
+        screenshot: item.screenshot
+      }))
+    };
+
+    let sent = false;
+
+    // 1. Try sending to Local Loopback Agent Bridge (127.0.0.1:44922)
+    try {
+      const bridgeRes = await fetch('http://127.0.0.1:44922/api/inbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (bridgeRes.ok) sent = true;
+    } catch (e) {}
+
+    // 2. Try sending to Dev Server Middleware
+    if (!sent) {
+      try {
+        const devRes = await fetch('/__visualpatch_inbox', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (devRes.ok) sent = true;
+      } catch (e) {}
+    }
+
+    // 3. Always copy clean 0-base64 Markdown text + screenshot to clipboard as immediate fallback
+    let md = `### 📌 VisualPatch UI Task Queue\n`;
+    md += `**Source URL:** \`${window.location.href}\`\n`;
+    md += `**Total Items:** ${count}\n\n`;
+
+    currentAnnotations.forEach((item, index) => {
+      md += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
+      if (item.component) md += `- **React Component:** \`<${item.component}>\`\n`;
+      if (item.sourceFile) md += `- **Source File:** \`${item.sourceFile}\`\n`;
+      if (item.textSnippet) md += `- **Rendered Text:** "${item.textSnippet}"\n`;
+      md += `- **Requested Change:** ${item.note || 'Inspect and refine component styling/layout.'}\n\n`;
+    });
+
+    try {
+      const compositeBlob = await createCompositeScreenshotBlob(currentAnnotations);
+      if (compositeBlob && navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([md], { type: 'text/plain' }),
+            'image/png': compositeBlob
+          })
+        ]);
+      } else {
+        await navigator.clipboard.writeText(md);
+      }
+    } catch (clipErr) {
+      try { await navigator.clipboard.writeText(md); } catch (e) {}
+    }
+
+    saveAnnotations([]);
+    setActiveCard(null);
+
+    if (sent) {
+      showToast(`⚡ Ingested into .visualpatch/inbox.md! Check your agent.`);
+    } else {
+      showToast(`📋 Copied for AI (+ saved to clipboard)`);
+    }
+  };
+  sendToAgentRef.current = sendToAgent;
 
   // Immediate 1-click clear
   const clearAll = () => {
@@ -1179,9 +1345,15 @@ export default function DevAnnotator() {
                     <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
                     PIN {activeCard.number < 10 ? `0${activeCard.number}` : activeCard.number}
                   </span>
-                  <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>
-                    &lt;{activeCard.tag}&gt;
-                  </span>
+                  {activeCard.component ? (
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                      &lt;{activeCard.component} /&gt;
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>
+                      &lt;{activeCard.tag}&gt;
+                    </span>
+                  )}
                 </div>
 
                 <button
@@ -1216,9 +1388,9 @@ export default function DevAnnotator() {
                 </button>
               </div>
 
-              {/* Selector / Snippet Preview */}
+              {/* Source File & Selector / Snippet Preview */}
               <div style={{
-                fontSize: '11.5px',
+                fontSize: '11px',
                 color: '#cbd5e1',
                 marginBottom: activeCard.screenshot ? '8px' : '12px',
                 background: 'rgba(0, 0, 0, 0.4)',
@@ -1231,7 +1403,10 @@ export default function DevAnnotator() {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                {activeCard.textSnippet ? `"${activeCard.textSnippet}"` : activeCard.selector}
+                {activeCard.sourceFile ? (
+                  <span style={{ color: '#38bdf8', marginRight: '6px' }}>📄 {activeCard.sourceFile}</span>
+                ) : null}
+                <span>{activeCard.textSnippet ? `"${activeCard.textSnippet}"` : activeCard.selector}</span>
               </div>
 
               {/* Screenshot Thumbnail Preview / Loading Skeleton */}
@@ -1449,31 +1624,63 @@ export default function DevAnnotator() {
                       showToast(`Saved Pin #${activeCard.number}`);
                     }}
                     style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      color: '#f8fafc',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                    }}
+                    title="Save note locally (Enter)"
+                  >
+                    <span>Save</span>
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', padding: '1px 3.5px', borderRadius: '3px' }}>↵</span>
+                  </button>
+
+                  <button
+                    onClick={() => sendToAgent()}
+                    style={{
                       padding: '6px 14px',
                       borderRadius: '8px',
                       border: 'none',
                       background: 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
                       color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 600,
+                      fontSize: '11.5px',
+                      fontWeight: 700,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 10px rgba(0, 113, 227, 0.45)',
+                      gap: '5px',
+                      boxShadow: '0 2px 12px rgba(0, 113, 227, 0.45)',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 113, 227, 0.6)';
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 113, 227, 0.65)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 113, 227, 0.45)';
+                      e.currentTarget.style.boxShadow = '0 2px 12px rgba(0, 113, 227, 0.45)';
                     }}
+                    title="Transmit to Agent Inbox (Ctrl+Enter)"
                   >
-                    <span>Save Pin</span>
-                    <span style={{ fontSize: '10px', opacity: 0.8, fontFamily: 'monospace', background: 'rgba(255,255,255,0.2)', padding: '1px 4px', borderRadius: '4px' }}>↵</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    <span>Send to Agent</span>
+                    <span style={{ fontSize: '9px', opacity: 0.85, fontFamily: 'monospace', background: 'rgba(255,255,255,0.2)', padding: '1px 4px', borderRadius: '3px' }}>Ctrl+↵</span>
                   </button>
                 </div>
               </div>
@@ -1627,7 +1834,69 @@ export default function DevAnnotator() {
                 </svg>
               </button>
 
-              {/* 3. Copy for AI Icon Button */}
+              {/* 3. Send to Agent (Direct 0-Token AI Bridge) */}
+              <button
+                onClick={sendToAgent}
+                style={{
+                  position: 'relative',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  border: annotations.length ? '1px solid #0071e3' : '1px solid transparent',
+                  background: annotations.length ? 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)' : 'rgba(255, 255, 255, 0.03)',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: annotations.length ? '0 0 14px rgba(0, 113, 227, 0.5)' : 'none',
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
+                  if (!annotations.length) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  if (!annotations.length) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  }
+                }}
+                title={`⚡ Send ${annotations.length} item${annotations.length !== 1 ? 's' : ''} to Agent Inbox (Ctrl+Enter)`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+
+                {annotations.length > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-3px',
+                      right: '-3px',
+                      minWidth: '15px',
+                      height: '15px',
+                      padding: '0 3.5px',
+                      borderRadius: '9999px',
+                      background: '#ffffff',
+                      color: '#0071e3',
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      fontFamily: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.6)'
+                    }}
+                  >
+                    {annotations.length}
+                  </span>
+                )}
+              </button>
+
+              {/* 4. Copy for AI Icon Button */}
               <button
                 onClick={copyForAI}
                 style={{
@@ -1636,8 +1905,8 @@ export default function DevAnnotator() {
                   height: '30px',
                   borderRadius: '50%',
                   border: annotations.length ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid transparent',
-                  background: annotations.length ? '#0071e3' : 'rgba(255, 255, 255, 0.03)',
-                  color: '#ffffff',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  color: '#94a3b8',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1646,15 +1915,13 @@ export default function DevAnnotator() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  if (!annotations.length) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                  }
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.color = '#ffffff';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  if (!annotations.length) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                  }
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.color = '#94a3b8';
                 }}
                 title={`Copy ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} for AI (Ctrl+C)`}
               >

@@ -197,6 +197,11 @@ const args = process.argv.slice(2);
 const command = args[0] || 'init';
 
 switch (command) {
+  case 'bridge':
+  case 'serve':
+  case 'daemon':
+    require('./bridge.js');
+    break;
   case 'init':
   case 'add':
   case 'install':
@@ -216,6 +221,7 @@ switch (command) {
     log(`Usage:
   npx visualpatch            Initialize VisualPatch in the current project
   npx visualpatch init       Initialize VisualPatch in the current project
+  npx visualpatch bridge     Launch the local agent loopback bridge (127.0.0.1:44922)
   npx visualpatch --version  Show current version
   npx visualpatch --help     Show this help message
 

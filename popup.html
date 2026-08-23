@@ -325,6 +325,22 @@
   <!-- Commands Stack -->
   <div class="vp-section-label">Quick Actions</div>
   <div class="vp-action-stack">
+    <!-- Send to Agent -->
+    <button class="vp-action-row" id="send-agent-btn" title="Send all annotations to AI agent inbox">
+      <div class="vp-row-left">
+        <svg class="vp-action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #38bdf8;">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+        <div class="vp-action-meta">
+          <span class="vp-action-title">Send to Agent ⚡</span>
+          <span class="vp-action-sub">Populate .visualpatch/inbox.md</span>
+        </div>
+      </div>
+      <div class="vp-kbd-group">
+        <kbd>Ctrl</kbd><kbd>↵</kbd>
+      </div>
+    </button>
+
     <!-- Area Screenshot -->
     <button class="vp-action-row" id="toggle-screenshot" title="Press S to capture screenshot">
       <div class="vp-row-left">
@@ -391,6 +407,9 @@
       <span>Keyboard Shortcuts</span>
     </div>
     <div class="vp-matrix-grid">
+      <div class="vp-kbd-group"><kbd>Ctrl</kbd><kbd>↵</kbd></div>
+      <div class="vp-matrix-desc">Send to Agent ⚡ (.visualpatch)</div>
+
       <div class="vp-kbd-group"><kbd>S</kbd></div>
       <div class="vp-matrix-desc">Crop Area Screenshot</div>
 
@@ -402,9 +421,6 @@
 
       <div class="vp-kbd-group"><kbd>Alt</kbd><kbd>T</kbd></div>
       <div class="vp-matrix-desc">Minimize / Show Dock</div>
-
-      <div class="vp-kbd-group"><kbd>Enter</kbd></div>
-      <div class="vp-matrix-desc">Save Note (inside card)</div>
     </div>
   </div>
 

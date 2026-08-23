@@ -36,9 +36,15 @@ async function triggerAction(action, keyEvtFunc) {
   window.close();
 }
 
-document.getElementById('toggle-toolbar').addEventListener('click', () => {
-  triggerAction('SHOW_TOOLBAR', () => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { altKey: true, code: 'KeyT', key: 't', bubbles: true }));
+document.getElementById('send-agent-btn').addEventListener('click', () => {
+  triggerAction('SEND_TO_AGENT', () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, code: 'Enter', key: 'Enter', bubbles: true }));
+  });
+});
+
+document.getElementById('toggle-screenshot').addEventListener('click', () => {
+  triggerAction('TOGGLE_SCREENSHOT', () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', bubbles: true }));
   });
 });
 
@@ -48,8 +54,8 @@ document.getElementById('toggle-inspect').addEventListener('click', () => {
   });
 });
 
-document.getElementById('toggle-screenshot').addEventListener('click', () => {
-  triggerAction('TOGGLE_SCREENSHOT', () => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', bubbles: true }));
+document.getElementById('toggle-toolbar').addEventListener('click', () => {
+  triggerAction('SHOW_TOOLBAR', () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { altKey: true, code: 'KeyT', key: 't', bubbles: true }));
   });
 });
