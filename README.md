@@ -22,31 +22,22 @@
 
 ## ⚡ What Makes VisualPatch v2.0 Magical
 
+### 🔄 The Zero-Window-Switching Live Loop
+
+```mermaid
+flowchart LR
+    A["🌐 1. Browser (localhost)<br/>• Press [S] to crop area<br/>• Type note & hit Ctrl+↵"] --> B["⚡ 2. VisualPatch Ingest<br/>• Extracts <HeroSection /><br/>• Writes .visualpatch/inbox.md"]
+    B --> C["🤖 3. AI Agent Auto-Wake<br/>• Reads pinpoint source<br/>• Applies surgical patch"]
+    C --> D["✨ 4. Vite HMR Live Update<br/>• UI morphs in ~50ms<br/>• 0 window switching!"]
+    D -.-> A
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                          ⚡ THE ZERO-WINDOW-SWITCHING LIVE LOOP                             │
-├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. YOU (In Browser on localhost:3000):                                                      │
-│    • Pin an element or crop an area (Press S).                                              │
-│    • Type note: "Increase CTA padding and add cobalt glow" ──► Hit [Ctrl + Enter]          │
-│                                                                                             │
-│ 2. DEV SERVER / BRIDGE:                                                                     │
-│    • Ingests exact component name (<HeroSection />) & source file (HeroSection.jsx#L42).    │
-│    • Writes `.visualpatch/inbox.md` & saves screenshots to `.visualpatch/preview_1.png`.    │
-│                                                                                             │
-│ 3. `wait-for-inbox.js` (Background Daemon):                                                 │
-│    • Detects file timestamp update ──► Triggers IDE Reactive Wakeup.                        │
-│                                                                                             │
-│ 4. AI AGENT (Antigravity / Cursor / Claude Code):                                           │
-│    • Wakes up automatically with ZERO user prompting or copy-pasting.                       │
-│    • Surgical edit applied at `HeroSection.jsx#L42` with ZERO exploratory turns.            │
-│    • Runs build verification & re-arms watcher.                                             │
-│                                                                                             │
-│ 5. VITE HMR (Hot Module Replacement):                                                       │
-│    • UI instantly re-renders in your browser window in ~50ms!                               │
-│    • You NEVER have to switch windows or copy-paste a single prompt!                        │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+
+| Step | Environment | What Happens Automatically |
+| :---: | :--- | :--- |
+| **`1`** | **🌐 Browser (`localhost`)** | Pin an element or crop an area (<kbd>S</kbd>), type your change request, and press **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>**. |
+| **`2`** | **⚡ Bridge / Middleware** | Resolves exact component `<HeroSection />` and source file `src/components/HeroSection.jsx#L42`, saving to `.visualpatch/inbox.md`. |
+| **`3`** | **🤖 AI Agent (Auto-Wakeup)** | The IDE agent wakes up via **Reactive Task Wakeup** with **zero prompt tokens wasted** and applies the surgical fix. |
+| **`4`** | **✨ Vite HMR (Instant ~50ms)** | The browser hot-reloads and updates live—you **never** have to switch windows or copy-paste prompts! |
 
 ---
 
