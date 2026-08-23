@@ -1,6 +1,6 @@
 {
   "name": "visualpatch",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Universal in-browser visual feedback & pinpoint annotation tool for web development with AI pair programmers.",
   "author": "OpusTechnica",
   "license": "MIT",
@@ -38,6 +38,7 @@
   "files": [
     "bin",
     "examples",
+    "assets",
     "index.js",
     "index.mjs",
     "index.d.ts",
@@ -51,6 +52,7 @@
     "icon16.png",
     "icon48.png",
     "icon128.png",
+    "AGENTS.md",
     "README.md",
     "LICENSE"
   ],
