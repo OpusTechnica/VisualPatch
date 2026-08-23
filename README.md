@@ -24,13 +24,16 @@
 
 ### 🔄 The Zero-Window-Switching Live Loop
 
-```
-[ 🌐 1. Browser ] ──( Ctrl+↵ )──► [ ⚡ 2. VisualPatch Ingest ] ──( Auto-Wakeup )──► [ 🤖 3. AI Agent ] ──( Vite HMR )──► [ ✨ 4. Live UI ~50ms ]
-```
+<p align="center">
+  <img src="./assets/live-loop-flow.svg" alt="VisualPatch Zero-Window-Switching Live Loop" width="100%" />
+</p>
 
-| 🌐 **1. Browser (`localhost`)** | ⚡ **2. Ingestion Bridge** | 🤖 **3. AI Agent (Auto-Wake)** | ✨ **4. Vite HMR (Instant ~50ms)** |
-| :--- | :--- | :--- | :--- |
-| • Press <kbd>S</kbd> to crop an area<br/>• Or click any UI element<br/>• Type note & hit **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>** | • Extracts component (`<HeroSection />`)<br/>• Resolves file (`HeroSection.jsx#L42`)<br/>• Writes `.visualpatch/inbox.md` | • IDE agent wakes up automatically<br/>• Reads exact file & line number<br/>• Applies surgical code edit | • Browser hot-reloads in **~50ms**<br/>• UI morphs before your eyes<br/>• **0 window switching!** |
+| Step | Environment | What Happens Automatically |
+| :---: | :--- | :--- |
+| **`1`** | **🌐 Browser (`localhost`)** | Pin an element or crop an area (<kbd>S</kbd>), type your change request, and press **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>**. |
+| **`2`** | **⚡ Bridge / Middleware** | Resolves exact component `<HeroSection />` and source file `src/components/HeroSection.jsx#L42`, saving to `.visualpatch/inbox.md`. |
+| **`3`** | **🤖 AI Agent (Auto-Wakeup)** | The IDE agent wakes up via **Reactive Task Wakeup** with **zero prompt tokens wasted** and applies the surgical fix. |
+| **`4`** | **✨ Vite HMR (Instant ~50ms)** | The browser hot-reloads and updates live—you **never** have to switch windows or copy-paste prompts! |
 
 ---
 
