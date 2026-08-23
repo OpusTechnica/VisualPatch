@@ -10,6 +10,13 @@
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-success.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Style: CleanShot X Glass](https://img.shields.io/badge/Design-CleanShot%20X%20%2B%20Apple%20Glass-0071e3.svg)](#features)
 [![Privacy: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-emerald.svg)](#privacy--security)
+[![Agents: AGENTS.md](https://img.shields.io/badge/AI%20Agents-AGENTS.md%20Ready-38bdf8.svg)](./AGENTS.md)
+
+> [!TIP]
+> ### 🤖 1-Prompt Autonomous Setup for AI Agents
+> Want your AI assistant to install and configure VisualPatch automatically? Simply tell your agent:  
+> **`"Install VisualPatch in this project according to AGENTS.md"`**  
+> Any AI pair programmer (**Claude Code, Antigravity, Cursor, Windsurf, Devin**) will read [`AGENTS.md`](./AGENTS.md) and configure the component, dev server middleware, and live review loop in seconds with **zero manual effort**.
 
 ---
 
