@@ -1,115 +1,111 @@
-<svg width="980" height="260" viewBox="0 0 980 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1020" height="230" viewBox="0 0 1020 230" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Card Gradients -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b0e14" />
-      <stop offset="100%" stop-color="#111622" />
+    <!-- Master Dark Surface Gradients -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#12151c" />
+      <stop offset="100%" stop-color="#0c0e13" />
     </linearGradient>
-    
-    <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+
+    <!-- Subdued Single Master Cobalt Accent -->
+    <linearGradient id="cobaltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0071e3" />
-      <stop offset="100%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#005bb5" />
     </linearGradient>
 
-    <linearGradient id="skyGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#0ea5e9" />
+    <!-- Subtle Hairline Shading -->
+    <linearGradient id="hairline" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.14)" />
+      <stop offset="50%" stop-color="rgba(255, 255, 255, 0.06)" />
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.12)" />
     </linearGradient>
 
-    <linearGradient id="purpleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#818cf8" />
-      <stop offset="100%" stop-color="#6366f1" />
-    </linearGradient>
+    <!-- Subtle Elevation Shadow (No Neon Halos) -->
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
 
-    <linearGradient id="emeraldGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#34d399" />
-      <stop offset="100%" stop-color="#10b981" />
-    </linearGradient>
-
-    <!-- Filters -->
-    <filter id="glow1" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0071e3" flood-opacity="0.25" />
-    </filter>
-    <filter id="glow2" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#38bdf8" flood-opacity="0.25" />
-    </filter>
-    <filter id="glow3" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#6366f1" flood-opacity="0.25" />
-    </filter>
-    <filter id="glow4" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#10b981" flood-opacity="0.25" />
-    </filter>
-    
-    <!-- Arrow Marker -->
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#475569" />
+    <!-- Connection Markers -->
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b4252" />
     </marker>
-    <marker id="arrowLoop" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+    <marker id="loopHead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0071e3" />
     </marker>
   </defs>
 
   <style>
-    .card-title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
-    .card-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #94a3b8; }
-    .card-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; fill: #38bdf8; font-weight: 600; }
-    .kbd-pill { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; fill: #f8fafc; font-weight: 600; }
+    .step-badge { font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 10px; font-weight: 700; fill: #0071e3; letter-spacing: 0.08em; }
+    .card-title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; fill: #f8fafc; letter-spacing: -0.01em; }
+    .card-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; fill: #94a3b8; line-height: 1.4; }
+    .code-tag { font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 600; fill: #e2e8f0; }
+    .kbd-tag { font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 10px; font-weight: 700; fill: #ffffff; }
+    .loop-label { font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 600; fill: #64748b; letter-spacing: 0.06em; }
   </style>
 
   <!-- Connectors -->
-  <path d="M 215 95 L 255 95" stroke="#334155" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)" />
-  <path d="M 465 95 L 505 95" stroke="#334155" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)" />
-  <path d="M 715 95 L 755 95" stroke="#334155" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)" />
+  <line x1="230" y1="80" x2="260" y2="80" stroke="#2a3241" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrowHead)" />
+  <line x1="480" y1="80" x2="510" y2="80" stroke="#2a3241" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrowHead)" />
+  <line x1="730" y1="80" x2="760" y2="80" stroke="#2a3241" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrowHead)" />
 
-  <!-- Loopback Return Line -->
-  <path d="M 865 170 C 865 230, 115 230, 115 170" fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="6 4" opacity="0.6" marker-end="url(#arrowLoop)" />
-  <text x="490" y="242" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600" fill="#10b981" letter-spacing="0.05em">⚡ CONTINUOUS LIVE FEEDBACK LOOP (ZERO WINDOW SWITCHING)</text>
+  <!-- Continuous Loopback Return Trace -->
+  <path d="M 875 145 C 875 200, 125 200, 125 145" fill="none" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#loopHead)" />
+  <rect x="410" y="186" width="180" height="22" rx="4" fill="#0c0e13" stroke="#1e293b" stroke-width="1" />
+  <text x="500" y="201" text-anchor="middle" class="loop-label">⚡ CONTINUOUS LIVE LOOP</text>
 
-  <!-- Card 1: Browser -->
-  <g transform="translate(15, 20)" filter="url(#glow1)">
-    <rect width="200" height="150" rx="14" fill="url(#bgGrad)" stroke="#0071e3" stroke-width="1.5" />
-    <rect x="12" y="12" width="28" height="28" rx="8" fill="rgba(0, 113, 227, 0.15)" stroke="rgba(0, 113, 227, 0.3)" />
-    <text x="26" y="31" text-anchor="middle" font-size="14">🌐</text>
-    <text x="48" y="30" class="card-title">1. Browser Preview</text>
-    <text x="14" y="68" class="card-text">• Press <tspan class="card-mono">S</tspan> to crop area</text>
-    <text x="14" y="88" class="card-text">• Or click any element</text>
-    <rect x="14" y="108" width="172" height="26" rx="6" fill="rgba(0, 113, 227, 0.15)" stroke="rgba(0, 113, 227, 0.35)" />
-    <text x="100" y="125" text-anchor="middle" class="kbd-pill">Hit [ Ctrl + Enter ] ⚡</text>
+  <!-- Card 1: Browser Preview -->
+  <g transform="translate(15, 12)" filter="url(#cardShadow)">
+    <rect width="220" height="134" rx="10" fill="url(#cardBg)" stroke="url(#hairline)" stroke-width="1" />
+    <rect x="1" y="1" width="218" height="2" fill="#0071e3" rx="1" />
+    
+    <text x="14" y="24" class="step-badge">01 · BROWSER</text>
+    <text x="14" y="44" class="card-title">In-Browser Capture</text>
+    
+    <text x="14" y="68" class="card-body">• Press <tspan class="code-tag">S</tspan> to marquee crop</text>
+    <text x="14" y="86" class="card-body">• Or click any DOM element</text>
+
+    <rect x="14" y="98" width="192" height="24" rx="5" fill="rgba(0, 113, 227, 0.12)" stroke="rgba(0, 113, 227, 0.3)" />
+    <text x="110" y="114" text-anchor="middle" class="kbd-tag">Hit [ Ctrl + Enter ] ⚡</text>
   </g>
 
-  <!-- Card 2: Ingest -->
-  <g transform="translate(265, 20)" filter="url(#glow2)">
-    <rect width="200" height="150" rx="14" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="1.5" />
-    <rect x="12" y="12" width="28" height="28" rx="8" fill="rgba(56, 189, 248, 0.15)" stroke="rgba(56, 189, 248, 0.3)" />
-    <text x="26" y="31" text-anchor="middle" font-size="14">⚡</text>
-    <text x="48" y="30" class="card-title">2. VisualPatch Ingest</text>
-    <text x="14" y="68" class="card-text">• Traverses React Fiber</text>
-    <text x="14" y="88" class="card-text">• Resolves <tspan class="card-mono">&lt;Hero /&gt;</tspan></text>
-    <rect x="14" y="108" width="172" height="26" rx="6" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.3)" />
-    <text x="100" y="125" text-anchor="middle" class="card-mono" style="font-size: 9.5px;">Writes .visualpatch/inbox.md</text>
+  <!-- Card 2: React Fiber Resolver -->
+  <g transform="translate(265, 12)" filter="url(#cardShadow)">
+    <rect width="220" height="134" rx="10" fill="url(#cardBg)" stroke="url(#hairline)" stroke-width="1" />
+    
+    <text x="14" y="24" class="step-badge" style="fill: #94a3b8;">02 · RESOLVE</text>
+    <text x="14" y="44" class="card-title">Fiber Source Anchor</text>
+    
+    <text x="14" y="68" class="card-body">• Traverses React Fiber</text>
+    <text x="14" y="86" class="card-body">• Maps <tspan class="code-tag">&lt;Hero /&gt; #L42</tspan></text>
+
+    <rect x="14" y="98" width="192" height="24" rx="5" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" />
+    <text x="110" y="114" text-anchor="middle" class="code-tag" style="font-size: 9.5px; fill: #94a3b8;">.visualpatch/inbox.md</text>
   </g>
 
-  <!-- Card 3: Agent -->
-  <g transform="translate(515, 20)" filter="url(#glow3)">
-    <rect width="200" height="150" rx="14" fill="url(#bgGrad)" stroke="#6366f1" stroke-width="1.5" />
-    <rect x="12" y="12" width="28" height="28" rx="8" fill="rgba(99, 102, 241, 0.15)" stroke="rgba(99, 102, 241, 0.3)" />
-    <text x="26" y="31" text-anchor="middle" font-size="14">🤖</text>
-    <text x="48" y="30" class="card-title">3. AI Agent Auto-Wake</text>
-    <text x="14" y="68" class="card-text">• Task Reactive Wakeup</text>
-    <text x="14" y="88" class="card-text">• Reads exact line &amp; file</text>
-    <rect x="14" y="108" width="172" height="26" rx="6" fill="rgba(99, 102, 241, 0.15)" stroke="rgba(99, 102, 241, 0.35)" />
-    <text x="100" y="125" text-anchor="middle" class="kbd-pill" style="fill: #a5b4fc;">Surgical Edit (0 Turns)</text>
+  <!-- Card 3: AI Agent Auto-Wake -->
+  <g transform="translate(515, 12)" filter="url(#cardShadow)">
+    <rect width="220" height="134" rx="10" fill="url(#cardBg)" stroke="url(#hairline)" stroke-width="1" />
+    
+    <text x="14" y="24" class="step-badge" style="fill: #94a3b8;">03 · AGENT</text>
+    <text x="14" y="44" class="card-title">Reactive Agent Wake</text>
+    
+    <text x="14" y="68" class="card-body">• Ingests task queue</text>
+    <text x="14" y="86" class="card-body">• Zero exploratory turns</text>
+
+    <rect x="14" y="98" width="192" height="24" rx="5" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" />
+    <text x="110" y="114" text-anchor="middle" class="code-tag" style="font-size: 9.5px; fill: #cbd5e1;">Surgical Code Diff (0 Token Base64)</text>
   </g>
 
-  <!-- Card 4: HMR -->
-  <g transform="translate(765, 20)" filter="url(#glow4)">
-    <rect width="200" height="150" rx="14" fill="url(#bgGrad)" stroke="#10b981" stroke-width="1.5" />
-    <rect x="12" y="12" width="28" height="28" rx="8" fill="rgba(16, 185, 129, 0.15)" stroke="rgba(16, 185, 129, 0.3)" />
-    <text x="26" y="31" text-anchor="middle" font-size="14">✨</text>
-    <text x="48" y="30" class="card-title">4. Vite HMR Update</text>
-    <text x="14" y="68" class="card-text">• Hot Module Reload</text>
-    <text x="14" y="88" class="card-text">• UI morphs in <tspan style="fill: #34d399; font-weight: 700;">~50ms</tspan></text>
-    <rect x="14" y="108" width="172" height="26" rx="6" fill="rgba(16, 185, 129, 0.15)" stroke="rgba(16, 185, 129, 0.35)" />
-    <text x="100" y="125" text-anchor="middle" class="kbd-pill" style="fill: #6ee7b7;">Zero Window Switching 🎉</text>
+  <!-- Card 4: Vite HMR Live Update -->
+  <g transform="translate(765, 12)" filter="url(#cardShadow)">
+    <rect width="220" height="134" rx="10" fill="url(#cardBg)" stroke="url(#hairline)" stroke-width="1" />
+    
+    <text x="14" y="24" class="step-badge" style="fill: #94a3b8;">04 · SYNC</text>
+    <text x="14" y="44" class="card-title">Vite HMR ~50ms</text>
+    
+    <text x="14" y="68" class="card-body">• Instant hot reload</text>
+    <text x="14" y="86" class="card-body">• Zero window switching</text>
+
+    <rect x="14" y="98" width="192" height="24" rx="5" fill="rgba(0, 113, 227, 0.12)" stroke="rgba(0, 113, 227, 0.3)" />
+    <text x="110" y="114" text-anchor="middle" class="kbd-tag">Live UI Morphed ✨</text>
   </g>
 </svg>
