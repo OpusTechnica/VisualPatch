@@ -365,15 +365,16 @@
     /* Linear / Apple Glass Modal Card */
     .vp-card {
       position: fixed;
-      width: 340px;
+      width: 390px;
+      max-width: calc(100vw - 28px);
       background: rgba(14, 16, 20, 0.96);
       backdrop-filter: blur(28px) saturate(190%);
       -webkit-backdrop-filter: blur(28px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      box-shadow: 0 28px 56px -10px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       color: #f8fafc;
-      padding: 14px 16px;
+      padding: 16px 18px;
       z-index: 2147483648;
       pointer-events: auto;
       user-select: none;
@@ -539,27 +540,58 @@
     }
 
     .vp-btn-save {
-      padding: 5.5px 13px;
-      border-radius: 7px;
+      padding: 0 10px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .vp-btn-save:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .vp-btn-save:active {
+      transform: scale(0.96);
+    }
+
+    .vp-btn-agent-send {
+      padding: 0 12px;
+      height: 32px;
+      border-radius: 8px;
       border: none;
-      background: #0071e3 !important;
-      color: #ffffff !important;
+      background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%);
+      color: #ffffff;
       font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45);
       transition: all 0.15s ease;
     }
 
-    .vp-btn-save:hover {
-      background: #005bb5 !important;
+    .vp-btn-agent-send:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.65);
     }
 
-    .vp-btn-save:active {
-      transform: scale(0.96);
+    .vp-btn-agent-send:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45);
     }
 
     /* Zoom Lightbox Modal */
@@ -1221,18 +1253,17 @@
           <span>Delete</span>
         </button>
 
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="vp-card-close" id="visualpatch-btn-cancel-pin" style="width: auto; height: auto; padding: 6px 11px; border-radius: 8px; font-size: 12px;">Cancel</button>
-          <button class="vp-btn-save" id="visualpatch-btn-save-pin" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #f8fafc;">
+        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+          <button class="vp-btn-save" id="visualpatch-btn-save-pin" title="Save note locally (Enter)">
             <span>Save</span>
-            <span style="font-size: 10px; opacity: 0.8; font-family: monospace; background: rgba(255,255,255,0.15); padding: 1px 4px; border-radius: 4px;">↵</span>
+            <span style="font-size: 10px; opacity: 0.7; font-family: monospace; background: rgba(255,255,255,0.15); padding: 1px 3.5px; border-radius: 3px;">↵</span>
           </button>
-          <button class="vp-btn-save" id="visualpatch-btn-card-send-agent" style="background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%); color: #ffffff; box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45); gap: 5px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+          <button class="vp-btn-agent-send" id="visualpatch-btn-card-send-agent" title="Transmit to Agent Inbox (Ctrl+Enter)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="flex-shrink: 0;">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
             <span>Send to Agent</span>
-            <span style="font-size: 9px; opacity: 0.85; font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 3px;">Ctrl+↵</span>
+            <span style="font-size: 9px; opacity: 0.85; font-family: monospace; background: rgba(255,255,255,0.22); padding: 1.5px 4px; border-radius: 3px; flex-shrink: 0;">Ctrl+↵</span>
           </button>
         </div>
       </div>

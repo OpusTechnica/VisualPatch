@@ -137,8 +137,8 @@ export default function DevAnnotator() {
           return;
         }
 
-        // 2. Otherwise toggle inspect off
-        setIsInspectMode(false);
+        // 2. Toggle Inspect Mode ON/OFF
+        setIsInspectMode((prev) => !prev);
         return;
       }
 
@@ -984,7 +984,7 @@ export default function DevAnnotator() {
     setActiveCard(null);
 
     if (sent) {
-      showToast(`⚡ Ingested into .visualpatch/inbox.md! Check your agent.`);
+      showToast(`⚡ Saved to .visualpatch/inbox.md! (Type 'vp' in chat)`);
     } else {
       showToast(`📋 Copied for AI (+ saved to clipboard)`);
     }
@@ -1310,7 +1310,8 @@ export default function DevAnnotator() {
                 position: 'fixed',
                 left: `${cardX}px`,
                 top: `${cardY}px`,
-                width: '345px',
+                width: '390px',
+                maxWidth: 'calc(100vw - 28px)',
                 background: 'rgba(14, 16, 20, 0.96)',
                 backdropFilter: 'blur(28px) saturate(190%)',
                 WebkitBackdropFilter: 'blur(28px) saturate(190%)',
@@ -1340,13 +1341,22 @@ export default function DevAnnotator() {
                     fontSize: '11px',
                     fontWeight: 700,
                     fontFamily: 'monospace',
-                    letterSpacing: '0.02em'
+                    letterSpacing: '0.04em'
                   }}>
                     <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
                     PIN {activeCard.number < 10 ? `0${activeCard.number}` : activeCard.number}
                   </span>
                   {activeCard.component ? (
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#38bdf8',
+                      background: 'rgba(56, 189, 248, 0.12)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace'
+                    }}>
                       &lt;{activeCard.component} /&gt;
                     </span>
                   ) : (
@@ -1438,9 +1448,9 @@ export default function DevAnnotator() {
                       marginBottom: '12px',
                       borderRadius: '10px',
                       overflow: 'hidden',
-                      border: '1px solid rgba(0, 113, 227, 0.4)',
-                      background: 'rgba(0, 0, 0, 0.6)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)'
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      background: '#090b0e',
+                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)'
                     }}
                   >
                     <img
@@ -1448,37 +1458,36 @@ export default function DevAnnotator() {
                       alt="Captured Area"
                       style={{
                         width: '100%',
-                        height: '110px',
-                        objectFit: 'cover',
+                        maxHeight: '120px',
+                        objectFit: 'contain',
                         display: 'block',
-                        cursor: 'zoom-in'
+                        cursor: 'pointer'
                       }}
                       onClick={() => setZoomImage(activeCard.screenshot)}
-                      title="Click to view full resolution"
+                      title="Click to Zoom Fullscreen"
                     />
                     <div
                       style={{
                         position: 'absolute',
-                        top: '6px',
+                        bottom: '6px',
                         right: '6px',
                         display: 'flex',
-                        gap: '4px'
+                        gap: '6px'
                       }}
                     >
                       <button
                         onClick={() => setZoomImage(activeCard.screenshot)}
                         style={{
-                          padding: '3px 7px',
-                          borderRadius: '5px',
-                          background: 'rgba(12, 14, 18, 0.85)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(14, 16, 20, 0.88)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
                           color: '#ffffff',
                           fontSize: '10px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           backdropFilter: 'blur(8px)'
                         }}
-                        title="Zoom full image"
                       >
                         🔍 Zoom
                       </button>
@@ -1486,17 +1495,16 @@ export default function DevAnnotator() {
                         href={activeCard.screenshot}
                         download={`visualpatch-pin-${activeCard.number}.png`}
                         style={{
-                          padding: '3px 7px',
-                          borderRadius: '5px',
-                          background: 'rgba(12, 14, 18, 0.85)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(14, 16, 20, 0.88)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
                           color: '#38bdf8',
                           fontSize: '10px',
                           fontWeight: 600,
                           textDecoration: 'none',
                           backdropFilter: 'blur(8px)'
                         }}
-                        title="Download PNG"
                       >
                         💾 PNG
                       </a>
@@ -1505,39 +1513,13 @@ export default function DevAnnotator() {
                 )
               )}
 
-              {/* Textarea Input */}
+              {/* Note Textarea */}
               <textarea
                 ref={textareaRef}
                 value={cardText}
                 onChange={(e) => setCardText(e.target.value)}
-                placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)"
-                style={{
-                  width: '100%',
-                  height: '76px',
-                  background: 'rgba(0, 0, 0, 0.55)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
-                  borderRadius: '10px',
-                  color: '#ffffff',
-                  padding: '10px 12px',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  lineHeight: '1.45',
-                  resize: 'vertical',
-                  outline: 'none',
-                  marginBottom: '14px',
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#0071e3';
-                  e.target.style.boxShadow = '0 0 0 2px rgba(0, 113, 227, 0.45), inset 0 2px 4px rgba(0,0,0,0.6)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.14)';
-                  e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.6)';
-                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     const updated = annotations.map((item) =>
                       item.id === activeCard.id ? { ...item, note: cardText.trim() } : item
@@ -1547,10 +1529,30 @@ export default function DevAnnotator() {
                     showToast(`Saved Pin #${activeCard.number}`);
                   }
                 }}
+                placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)"
+                style={{
+                  width: '100%',
+                  height: '76px',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '10px',
+                  color: '#f8fafc',
+                  padding: '9px 12px',
+                  fontSize: '12.5px',
+                  lineHeight: '1.45',
+                  resize: 'vertical',
+                  outline: 'none',
+                  marginBottom: '14px',
+                  boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.5)',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => (e.target.style.borderColor = '#0071e3')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
               />
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* Actions Footer */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                 <button
                   onClick={() => {
                     const updated = annotations.filter((item) => item.id !== activeCard.id);
@@ -1559,7 +1561,8 @@ export default function DevAnnotator() {
                     showToast(`Deleted Pin #${activeCard.number}`);
                   }}
                   style={{
-                    padding: '6px 11px',
+                    padding: '0 10px',
+                    height: '32px',
                     borderRadius: '8px',
                     border: '1px solid rgba(239, 68, 68, 0.25)',
                     background: 'rgba(239, 68, 68, 0.08)',
@@ -1570,16 +1573,19 @@ export default function DevAnnotator() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '5px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     transition: 'all 0.15s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.18)';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
                     e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
                     e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
                   }}
+                  title="Delete this pin"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -1588,32 +1594,7 @@ export default function DevAnnotator() {
                   <span>Delete</span>
                 </button>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    onClick={() => setActiveCard(null)}
-                    style={{
-                      padding: '6px 11px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      color: '#cbd5e1',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.color = '#ffffff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                      e.currentTarget.style.color = '#cbd5e1';
-                    }}
-                  >
-                    Cancel
-                  </button>
-
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                   <button
                     onClick={() => {
                       const updated = annotations.map((item) =>
@@ -1624,7 +1605,8 @@ export default function DevAnnotator() {
                       showToast(`Saved Pin #${activeCard.number}`);
                     }}
                     style={{
-                      padding: '6px 12px',
+                      padding: '0 10px',
+                      height: '32px',
                       borderRadius: '8px',
                       border: '1px solid rgba(255, 255, 255, 0.12)',
                       background: 'rgba(255, 255, 255, 0.06)',
@@ -1634,7 +1616,9 @@ export default function DevAnnotator() {
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '5px',
+                      gap: '4px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
@@ -1646,24 +1630,26 @@ export default function DevAnnotator() {
                     title="Save note locally (Enter)"
                   >
                     <span>Save</span>
-                    <span style={{ fontSize: '10px', opacity: 0.7, fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', padding: '1px 3.5px', borderRadius: '3px' }}>↵</span>
                   </button>
 
                   <button
                     onClick={() => sendToAgent()}
                     style={{
-                      padding: '6px 14px',
+                      padding: '0 12px',
+                      height: '32px',
                       borderRadius: '8px',
                       border: 'none',
                       background: 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
                       color: '#ffffff',
                       fontSize: '11.5px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '5px',
-                      boxShadow: '0 2px 12px rgba(0, 113, 227, 0.45)',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 10px rgba(0, 113, 227, 0.45)',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
@@ -1672,15 +1658,15 @@ export default function DevAnnotator() {
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 12px rgba(0, 113, 227, 0.45)';
+                      e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 113, 227, 0.45)';
                     }}
                     title="Transmit to Agent Inbox (Ctrl+Enter)"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ flexShrink: 0 }}>
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                     </svg>
                     <span>Send to Agent</span>
-                    <span style={{ fontSize: '9px', opacity: 0.85, fontFamily: 'monospace', background: 'rgba(255,255,255,0.2)', padding: '1px 4px', borderRadius: '3px' }}>Ctrl+↵</span>
+                    <span style={{ fontSize: '9px', opacity: 0.85, fontFamily: 'monospace', background: 'rgba(255,255,255,0.22)', padding: '1.5px 4px', borderRadius: '3px', flexShrink: 0 }}>Ctrl+↵</span>
                   </button>
                 </div>
               </div>
