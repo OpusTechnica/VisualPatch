@@ -1561,40 +1561,53 @@ export default function DevAnnotator() {
                     showToast(`Deleted Pin #${activeCard.number}`);
                   }}
                   style={{
-                    padding: '0 10px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    color: '#f87171',
-                    fontSize: '11.5px',
-                    fontWeight: 600,
+                    padding: '0 8px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    border: '1px solid transparent',
+                    background: 'transparent',
+                    color: '#94a3b8',
+                    fontSize: '11px',
+                    fontWeight: 500,
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '5px',
+                    gap: '4px',
                     whiteSpace: 'nowrap',
                     flexShrink: 0,
                     transition: 'all 0.15s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
-                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
-                  }}
-                  onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
                     e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                    e.currentTarget.style.color = '#f87171';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'transparent';
+                    e.currentTarget.style.color = '#94a3b8';
                   }}
                   title="Delete this pin"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
                   <span>Delete</span>
                 </button>
 
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                {/* Apple Pro Segmented Split Capsule */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  background: 'rgba(15, 18, 24, 0.85)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.45)',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  {/* Left Segment: Save Draft */}
                   <button
                     onClick={() => {
                       const updated = annotations.map((item) =>
@@ -1605,68 +1618,78 @@ export default function DevAnnotator() {
                       showToast(`Saved Pin #${activeCard.number}`);
                     }}
                     style={{
-                      padding: '0 10px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      color: '#f8fafc',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
+                      padding: '0 9px',
+                      height: '28px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#cbd5e1',
+                      fontSize: '11px',
+                      fontWeight: 500,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
                       whiteSpace: 'nowrap',
-                      flexShrink: 0,
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.color = '#ffffff';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#cbd5e1';
                     }}
-                    title="Save note locally (Enter)"
+                    title="Save draft locally (Enter)"
                   >
                     <span>Save</span>
+                    <span style={{ fontSize: '9.5px', opacity: 0.65, fontFamily: 'monospace' }}>↵</span>
                   </button>
 
+                  {/* Hairline Divider */}
+                  <div style={{ width: '1px', height: '16px', background: 'rgba(255, 255, 255, 0.12)' }} />
+
+                  {/* Right Segment: Send to Agent */}
                   <button
                     onClick={() => sendToAgent()}
                     style={{
-                      padding: '0 12px',
-                      height: '32px',
-                      borderRadius: '8px',
+                      padding: '0 11px',
+                      height: '28px',
                       border: 'none',
-                      background: 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
+                      background: '#0071e3',
                       color: '#ffffff',
-                      fontSize: '11.5px',
+                      fontSize: '11px',
                       fontWeight: 600,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '5px',
                       whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      boxShadow: '0 2px 10px rgba(0, 113, 227, 0.45)',
+                      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.22)',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 113, 227, 0.65)';
+                      e.currentTarget.style.background = '#007dfc';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 113, 227, 0.45)';
+                      e.currentTarget.style.background = '#0071e3';
                     }}
                     title="Transmit to Agent Inbox (Ctrl+Enter)"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ flexShrink: 0 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ flexShrink: 0 }}>
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                     </svg>
                     <span>Send to Agent</span>
-                    <span style={{ fontSize: '9px', opacity: 0.85, fontFamily: 'monospace', background: 'rgba(255,255,255,0.22)', padding: '1.5px 4px', borderRadius: '3px', flexShrink: 0 }}>Ctrl+↵</span>
+                    <span style={{
+                      fontSize: '8.5px',
+                      opacity: 0.85,
+                      fontFamily: 'monospace',
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      padding: '1px 3.5px',
+                      borderRadius: '3px',
+                      letterSpacing: '0.02em',
+                      flexShrink: 0
+                    }}>Ctrl+↵</span>
                   </button>
                 </div>
               </div>

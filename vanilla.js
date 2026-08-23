@@ -516,77 +516,90 @@
     }
 
     .vp-btn-delete {
-      padding: 5px 10px;
-      border-radius: 7px;
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      background: rgba(239, 68, 68, 0.06);
-      color: #f87171;
+      padding: 0 8px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #94a3b8;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.15s ease;
     }
 
     .vp-btn-delete:hover {
-      background: rgba(239, 68, 68, 0.14);
-      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.25);
+      color: #f87171;
     }
 
     .vp-btn-delete:active {
       transform: scale(0.96);
     }
 
-    .vp-btn-save {
-      padding: 0 10px;
-      height: 32px;
+    .vp-segmented-capsule {
+      display: inline-flex;
+      align-items: center;
       border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.06);
-      color: #f8fafc;
-      font-size: 11.5px;
-      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(15, 18, 24, 0.85);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .vp-btn-save-draft {
+      padding: 0 9px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 500;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
       white-space: nowrap;
-      flex-shrink: 0;
       transition: all 0.15s ease;
     }
 
-    .vp-btn-save:hover {
+    .vp-btn-save-draft:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .vp-capsule-divider {
+      width: 1px;
+      height: 16px;
       background: rgba(255, 255, 255, 0.12);
     }
 
-    .vp-btn-save:active {
-      transform: scale(0.96);
-    }
-
     .vp-btn-agent-send {
-      padding: 0 12px;
-      height: 32px;
-      border-radius: 8px;
+      padding: 0 11px;
+      height: 28px;
       border: none;
-      background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%);
+      background: #0071e3;
       color: #ffffff;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 5px;
       white-space: nowrap;
-      flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
       transition: all 0.15s ease;
     }
 
     .vp-btn-agent-send:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.65);
+      background: #007dfc;
     }
 
     .vp-btn-agent-send:active {
@@ -1246,24 +1259,25 @@
 
       <div class="vp-card-actions">
         <button class="vp-btn-delete" id="visualpatch-btn-del-pin" title="Delete this pin">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
           <span>Delete</span>
         </button>
 
-        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
-          <button class="vp-btn-save" id="visualpatch-btn-save-pin" title="Save note locally (Enter)">
+        <div class="vp-segmented-capsule">
+          <button class="vp-btn-save-draft" id="visualpatch-btn-save-pin" title="Save draft locally (Enter)">
             <span>Save</span>
-            <span style="font-size: 10px; opacity: 0.7; font-family: monospace; background: rgba(255,255,255,0.15); padding: 1px 3.5px; border-radius: 3px;">↵</span>
+            <span style="font-size: 9.5px; opacity: 0.65; font-family: monospace;">↵</span>
           </button>
+          <div class="vp-capsule-divider"></div>
           <button class="vp-btn-agent-send" id="visualpatch-btn-card-send-agent" title="Transmit to Agent Inbox (Ctrl+Enter)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="flex-shrink: 0;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="flex-shrink: 0;">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
             <span>Send to Agent</span>
-            <span style="font-size: 9px; opacity: 0.85; font-family: monospace; background: rgba(255,255,255,0.22); padding: 1.5px 4px; border-radius: 3px; flex-shrink: 0;">Ctrl+↵</span>
+            <span style="font-size: 8.5px; opacity: 0.85; font-family: monospace; background: rgba(0, 0, 0, 0.25); padding: 1px 3.5px; border-radius: 3px; letter-spacing: 0.02em; flex-shrink: 0;">Ctrl+↵</span>
           </button>
         </div>
       </div>
