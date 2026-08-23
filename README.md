@@ -1,7 +1,7 @@
 # 🎯 VisualPatch v2.0
 
-> **Universal In-Browser Visual Feedback & Inspection Tool for AI Pair Programmers.**  
-> Effortlessly guide **Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, and Devin** with pinpoint visual precision.  
+> **Universal In-Browser Visual Feedback & Autonomous UI Review Tool for AI Pair Programmers.**  
+> Effortlessly guide **Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, and Devin** with pinpoint visual precision and zero window switching.  
 > Crafted with an ultra-premium **CleanShot X + Apple Pro frosted glass aesthetic**.
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/OpusTechnica/VisualPatch/releases)
@@ -13,55 +13,47 @@
 
 ---
 
-## 🚀 What's New in v2.0
+## ⚡ What Makes VisualPatch v2.0 Magical
 
-- 📷 **CleanShot X Studio Spotlight Viewfinder**: Crystal-clear crop window with infinite spotlight backdrop shading (`box-shadow: 0 0 0 99999px rgba(0, 0, 0, 0.52)`), dual-contrast boundary, 4 precision CAD L-brackets, center reticle, and floating acrylic dimension capsule (`953 × 393 PX`).
-- 🖼️ **Auto-Stitched Multi-Screenshot Strip**: Capturing multiple screenshot pins automatically stitches them into **one consolidated image strip** with dark headers (`PIN #1: selector`, `PIN #2: selector`), bypassing the OS single-image clipboard limitation!
-- ⚡ **0ms Lag-Free Micro-Container Snapshot Engine**: Localized container resolution cuts area snapshot execution from 1,500ms down to **~3ms** with zero UI thread freeze.
-- 🎯 **Accurate Component Selector Engine**: Uses `document.elementsFromPoint` with deep overlay exclusion to capture exact underlying UI elements (`h1.hero-title`, `nav.header`, `button.cta`) rather than overlay backdrops.
-- ⌨️ **Single-Key <kbd>S</kbd> Shortcut**: Press <kbd>S</kbd> to toggle Area Screenshot mode instantly, protected by smart input-safe typing guards.
-- 📦 **Multi-Format Distribution**: Available via `npx`, `npm`, standalone CDN script, and ready-to-load ZIP extension package!
-
----
-
-## 🌟 Why VisualPatch?
-
-Explaining UI tweaks, alignment issues, and styling bugs to AI in chat is slow and frustrating:
-- ❌ *"Make the second button in the middle a bit higher and change its color."* (Vague, AI guesses the wrong selector)
-- ✅ **With VisualPatch**: Press **`S`** to crop an area or click any element, type your note, and press **Ctrl+C**.
-
-VisualPatch automatically captures:
-1. **Exact CSS Selectors**: `div.hero > div.cta-group > button.btn-primary:nth-of-type(1)`
-2. **Text Content Previews**: `"Schedule Discovery Session"`
-3. **Viewport & Document Coordinates**: Precise anchor points that scroll in sync with your page.
-4. **Structured Markdown Prompt**: Lightweight, token-efficient prompt (0 base64 waste) ready to paste into any AI chat.
-5. **Consolidated High-Res Screenshot Strip**: Automatically placed on your OS clipboard ready for instant visual paste.
-
----
-
-## ⚡ Compatible with All AI Agents
-
-VisualPatch produces standard, clean markdown prompts optimized for:
-- 🤖 **Claude / Anthropic** (Claude Code, Artifacts, Web, Desktop)
-- ⚡ **Cursor IDE**
-- 💬 **ChatGPT / OpenAI** (GPT-4o, Canvas, Codex)
-- 🌊 **Windsurf / Codeium**
-- 🐙 **GitHub Copilot Workspace**
-- 🪄 **Google Antigravity**
-- 🚀 **Devin, v0, Bolt.new, Lovable**
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                          ⚡ THE ZERO-WINDOW-SWITCHING LIVE LOOP                             │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. YOU (In Browser on localhost:3000):                                                      │
+│    • Pin an element or crop an area (Press S).                                              │
+│    • Type note: "Increase CTA padding and add cobalt glow" ──► Hit [Ctrl + Enter]          │
+│                                                                                             │
+│ 2. DEV SERVER / BRIDGE:                                                                     │
+│    • Ingests exact component name (<HeroSection />) & source file (HeroSection.jsx#L42).    │
+│    • Writes `.visualpatch/inbox.md` & saves screenshots to `.visualpatch/preview_1.png`.    │
+│                                                                                             │
+│ 3. `wait-for-inbox.js` (Background Daemon):                                                 │
+│    • Detects file timestamp update ──► Triggers IDE Reactive Wakeup.                        │
+│                                                                                             │
+│ 4. AI AGENT (Antigravity / Cursor / Claude Code):                                           │
+│    • Wakes up automatically with ZERO user prompting or copy-pasting.                       │
+│    • Surgical edit applied at `HeroSection.jsx#L42` with ZERO exploratory turns.            │
+│    • Runs build verification & re-arms watcher.                                             │
+│                                                                                             │
+│ 5. VITE HMR (Hot Module Replacement):                                                       │
+│    • UI instantly re-renders in your browser window in ~50ms!                               │
+│    • You NEVER have to switch windows or copy-paste a single prompt!                        │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## ✨ Key Features
+## 🚀 Key Features
 
+- ⚡ **Autonomous Live Review Loop (`/vp-live`)**: Edit frontend UI live directly from your browser without ever switching windows back to the IDE.
+- 🔍 **React Fiber & Component Source Inspector**: Automatically resolves the exact React/Vue component name (e.g. `<HeroSection />`) and source code file path + line number (`src/components/HeroSection.jsx#L42`).
 - 💎 **CleanShot X + Apple Pro Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
 - 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
-- 📸 **Spotlight Area Screenshot Marquee Tool**: Drag a spotlight box over any element or section with true-color subject fidelity and live acrylic dimension capsule.
-- 🖼️ **In-Card Thumbnail & Lightbox**: View instant previews, click to zoom full-resolution, and download clean PNG files.
-- 📍 **True-Document Pin Anchoring**: Dropped pins stay glued to their exact document position even during smooth scrolling.
-- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Enter</kbd> to save notes, <kbd>Shift</kbd>+<kbd>Enter</kbd> for newlines, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>S</kbd> for area snapshots.
-- 📋 **1-Click AI Copy & Auto-Clear**: Generates clean, structured markdown + copies the stitched image strip directly to your clipboard.
-- 🖐️ **Draggable Anywhere**: Drag the toolbar or the collapsed capsule to any corner of your screen—persists smoothly across page refreshes.
+- 📸 **Spotlight Area Screenshot Marquee Tool**: Drag a spotlight box over any element or section with true-color subject fidelity and live acrylic dimension capsule (`953 × 393 PX`).
+- 🖼️ **Auto-Stitched Multi-Screenshot Strip**: Capturing multiple screenshot pins automatically stitches them into **one consolidated image strip**, bypassing OS single-image clipboard limits.
+- 💾 **Zero-Token Local Artifact Storage**: Saves high-res crops as `.visualpatch/preview_1.png` on local disk, keeping prompt tokens under ~80 tokens (0 base64 waste).
+- ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to Send to Agent, <kbd>Enter</kbd> to save notes, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>S</kbd> for area snapshots.
+- 🖐️ **Draggable Anywhere**: Drag the toolbar or collapsed capsule to any corner of your screen—persists smoothly across page refreshes.
 - 🛡️ **Zero Telemetry / 100% Local**: Runs strictly on local development domains (`localhost`, `127.0.0.1`, local ports). No external servers, no tracking, zero analytics.
 
 ---
@@ -70,9 +62,10 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 | Shortcut | Action |
 | :--- | :--- |
+| **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>** / **<kbd>⌘</kbd> + <kbd>Enter</kbd>** | **⚡ Send to Agent Inbox** (Ingests to `.visualpatch/inbox.md`) |
 | **<kbd>S</kbd>** (or <kbd>Alt</kbd> + <kbd>S</kbd>) | **Toggle Area Screenshot Mode** (Drag to crop & pin) |
 | **<kbd>Esc</kbd>** (or <kbd>Alt</kbd> + <kbd>D</kbd> / <kbd>F9</kbd>) | **Toggle Element Inspect Mode** / Exit |
-| **<kbd>Ctrl</kbd> + <kbd>C</kbd>** / **<kbd>⌘</kbd> + <kbd>C</kbd>** | **Copy Feedbacks + Stitched Screenshot Strip for AI** |
+| **<kbd>Ctrl</kbd> + <kbd>C</kbd>** / **<kbd>⌘</kbd> + <kbd>C</kbd>** | **Copy Annotations + Screenshot Strip for AI** |
 | **<kbd>Alt</kbd> + <kbd>T</kbd>** or **<kbd>F8</kbd>** | **Toggle / Minimize Toolbar** |
 | **<kbd>Enter</kbd>** | **Save Pin Note** (inside feedback card) |
 | **<kbd>Shift</kbd> + <kbd>Enter</kbd>** | **New Line** (inside feedback card) |
@@ -80,25 +73,29 @@ VisualPatch produces standard, clean markdown prompts optimized for:
 
 ---
 
-## 🚀 Installation & Download Options
+## 🤖 Ask Your AI Agent to Install It (Zero Effort)
 
-Choose the installation method that fits your workflow:
+You can literally just tell your AI coding assistant:
 
-### Option 1: Instant Setup via `npx` (Fastest for Projects)
+> **"Install VisualPatch in this project and enable live review mode."**
 
-Run this one-liner inside your project directory (supports Next.js, Vite, React, Vue, Astro, HTML):
+Your AI assistant will automatically read [`AGENTS.md`](./AGENTS.md) and set up the component, dev server middleware, and background watcher in 5 seconds.
+
+---
+
+## 🚀 Manual Installation Options
+
+### Option 1: Instant Setup via `npx` (Fastest)
 
 ```bash
 npx visualpatch init
 ```
 
-The interactive CLI will automatically detect your framework and configure VisualPatch in seconds.
+The interactive CLI will automatically detect your framework (Vite, Next.js, React, Vue, Astro, HTML) and configure VisualPatch.
 
 ---
 
 ### Option 2: Install via `npm` / `pnpm` / `yarn`
-
-Install VisualPatch as a dev dependency:
 
 ```bash
 npm install -D visualpatch
@@ -140,25 +137,18 @@ export default function RootLayout({ children }) {
 
 ---
 
-### Option 3: Download Extension Package (`.zip`)
+### Option 3: Download Chrome Extension (`.zip`)
 
-Download the standalone extension package for Chromium browsers (Chrome, Edge, Brave, Arc, Opera):
-
-1. **Download the latest release zip**: [VisualPatch-v2.0.0.zip](https://github.com/OpusTechnica/VisualPatch/releases/download/v2.0.0/VisualPatch-v2.0.0.zip) (or clone the repo).
-2. Unzip the downloaded folder.
-3. Open your browser extensions page:
-   - **Chrome**: `chrome://extensions`
-   - **Edge**: `edge://extensions`
-   - **Brave**: `brave://extensions`
-4. Turn on **Developer mode** (top right toggle).
-5. Click **Load unpacked** and select the unzipped directory.
+1. **Download latest release**: [VisualPatch-v2.0.0.zip](https://github.com/OpusTechnica/VisualPatch/releases/download/v2.0.0/VisualPatch-v2.0.0.zip) (or clone the repo).
+2. Unzip the package.
+3. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
+4. Enable **Developer mode** toggle.
+5. Click **Load unpacked** and select the folder.
 6. Open any `localhost` tab — the **`● V`** dock appears automatically!
 
 ---
 
 ### Option 4: Standalone CDN `<script>` Tag (Vanilla HTML)
-
-For static HTML prototypes, add this single line before the closing `</body>` tag:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/visualpatch@2.0.0/vanilla.js" defer></script>
@@ -166,25 +156,22 @@ For static HTML prototypes, add this single line before the closing `</body>` ta
 
 ---
 
-## 📋 Example Generated AI Prompt
+## 📋 Generated Task Queue (`.visualpatch/inbox.md`)
 
-When you click **📋 Copy for AI** (or press **Ctrl+C**), your clipboard will contain structured markdown like this:
+When you hit **⚡ Send to Agent** (<kbd>Ctrl</kbd>+<kbd>Enter</kbd>), VisualPatch produces a clean, token-efficient markdown task:
 
 ```markdown
-### 📌 VisualPatch Feedback from Localhost Preview
-**URL:** `http://localhost:3000/#`
-**Total Items:** 2
+# 📌 VisualPatch UI Task Queue
+> **Source URL:** `http://localhost:3000/`  
+> **Total Items:** 1
 
-#### 1. Element: `header.navbar > div.nav-right > button.cta-btn` 📸 [Area Screenshot Attached]
-- **Current Content:** "Schedule Discovery"
-- **Requested Change:** Add the dual-arrow diagonal pass-through hover animation matching the hero button.
-
-#### 2. Element: `div.pricing-grid > div.card-pro:nth-of-type(2) > h3.price` 📸 [Area Screenshot Attached]
-- **Current Content:** "$99/mo"
-- **Requested Change:** Make the font 2px larger and apply high-contrast white with 800 weight.
+### Item #1: `section.hero > div.cta-wrap > button.cta-primary`
+- **React Component:** `<HeroSection>`
+- **Source File:** [`src/components/HeroSection.jsx#L42`](file:///.../src/components/HeroSection.jsx#L42)
+- **Rendered Text:** "Get Started"
+- **Visual Proof:** ![Screenshot 1](file:///.../.visualpatch/preview_1.png)
+- **Requested Change:** Make button glow cobalt and increase horizontal padding to 24px
 ```
-
-*(Plus the auto-stitched multi-screenshot composite image strip ready on your system clipboard for instant paste into Claude / ChatGPT / Discord / GitHub).*
 
 ---
 
@@ -193,17 +180,6 @@ When you click **📋 Copy for AI** (or press **Ctrl+C**), your clipboard will c
 - **Strict Localhost Scope**: Only activates on `localhost`, `127.0.0.1`, `0.0.0.0`, `.local`, or explicit port numbers.
 - **Zero Third-Party Network Requests**: All logic, state, and coordinates are handled entirely client-side.
 - **Isolated Shadow DOM**: UI styles are completely encapsulated in Shadow DOM and will never bleed into or conflict with your project's stylesheets.
-
----
-
-## 🤝 Contributing
-
-Contributions, feedback, and feature suggestions are always welcome!
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 
