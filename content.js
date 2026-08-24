@@ -1190,7 +1190,7 @@
     });
   }
 
-  // Open Linear-Style Note Card with smart viewport positioning & edge-flipping
+  // Open Linear-Style Note Card anchored naturally around the pin, constrained inside viewport
   function openNoteCard(item, pinEl) {
     cardsContainer.innerHTML = '';
 
@@ -1198,27 +1198,22 @@
     const scrollY = window.scrollY || 0;
     const clientX = item.x - scrollX;
     const clientY = item.y - scrollY;
-    const cardWidth = 390;
-    const cardHeight = 440;
-    const margin = 16;
+    const cardWidth = 380;
+    const estimatedHeight = item.screenshot ? 340 : 220;
+    const margin = 12;
 
-    // Horizontal placement: flip to left if near right edge
-    let cardX;
-    if (clientX + 16 + cardWidth > window.innerWidth - margin) {
-      cardX = clientX - cardWidth - 16;
-    } else {
-      cardX = clientX + 16;
+    // 1. Horizontal: Place 14px to the right of pin; if it overflows right screen edge, flip to left of pin
+    let targetX = clientX + 14;
+    if (targetX + cardWidth > window.innerWidth - margin) {
+      const leftX = clientX - cardWidth - 14;
+      targetX = leftX >= margin ? leftX : Math.max(margin, window.innerWidth - cardWidth - margin);
     }
-    cardX = Math.max(margin, Math.min(cardX, Math.max(margin, window.innerWidth - cardWidth - margin)));
+    const cardX = Math.max(margin, Math.min(targetX, window.innerWidth - cardWidth - margin));
 
-    // Vertical placement: flip above if near bottom edge
-    let cardY;
-    if (clientY + cardHeight > window.innerHeight - margin) {
-      cardY = clientY - cardHeight + 40;
-    } else {
-      cardY = clientY - 20;
-    }
-    cardY = Math.max(margin, Math.min(cardY, Math.max(margin, window.innerHeight - cardHeight - margin)));
+    // 2. Vertical: Align top of card with pin (clientY - 10), then gently clamp to stay fully in viewport
+    let targetY = clientY - 10;
+    const maxAllowedY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
+    const cardY = Math.max(margin, Math.min(targetY, maxAllowedY));
 
     const card = document.createElement('div');
     card.className = 'vp-card';
