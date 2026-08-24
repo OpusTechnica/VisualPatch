@@ -1002,14 +1002,35 @@ export default function DevAnnotator() {
 
   if (typeof document === 'undefined') return null;
 
-  // Calculate card position on screen
-  let cardX = 20;
-  let cardY = 20;
+  // Calculate card position on screen with intelligent viewport boundary detection & edge-flipping
+  let cardX = 16;
+  let cardY = 16;
   if (activeCard) {
     const scrollX = window.scrollX || 0;
     const scrollY = window.scrollY || 0;
-    cardX = Math.min(Math.max(activeCard.x - scrollX + 16, 20), window.innerWidth - 360);
-    cardY = Math.min(Math.max(activeCard.y - scrollY - 20, 20), window.innerHeight - 380);
+    const clientX = activeCard.x - scrollX;
+    const clientY = activeCard.y - scrollY;
+    const cardWidth = 390;
+    const cardHeight = 440;
+    const margin = 16;
+
+    // Horizontal placement: if pin is near right screen edge, place card to the left of the pin
+    if (clientX + 16 + cardWidth > window.innerWidth - margin) {
+      cardX = clientX - cardWidth - 16;
+    } else {
+      cardX = clientX + 16;
+    }
+    // Hard clamp to ensure card is always 100% within the viewport horizontally
+    cardX = Math.max(margin, Math.min(cardX, Math.max(margin, window.innerWidth - cardWidth - margin)));
+
+    // Vertical placement: if pin is near bottom screen edge, place card above the pin
+    if (clientY + cardHeight > window.innerHeight - margin) {
+      cardY = clientY - cardHeight + 40;
+    } else {
+      cardY = clientY - 20;
+    }
+    // Hard clamp to ensure card is always 100% within the viewport vertically
+    cardY = Math.max(margin, Math.min(cardY, Math.max(margin, window.innerHeight - cardHeight - margin)));
   }
 
   return (
@@ -1311,7 +1332,10 @@ export default function DevAnnotator() {
                 left: `${cardX}px`,
                 top: `${cardY}px`,
                 width: '390px',
-                maxWidth: 'calc(100vw - 28px)',
+                maxWidth: 'calc(100vw - 32px)',
+                maxHeight: 'calc(100vh - 32px)',
+                overflowY: 'auto',
+                boxSizing: 'border-box',
                 background: 'rgba(14, 16, 20, 0.96)',
                 backdropFilter: 'blur(28px) saturate(190%)',
                 WebkitBackdropFilter: 'blur(28px) saturate(190%)',

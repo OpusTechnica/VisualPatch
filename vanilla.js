@@ -366,7 +366,10 @@
     .vp-card {
       position: fixed;
       width: 390px;
-      max-width: calc(100vw - 28px);
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      box-sizing: border-box;
       background: rgba(14, 16, 20, 0.96);
       backdrop-filter: blur(28px) saturate(190%);
       -webkit-backdrop-filter: blur(28px) saturate(190%);
@@ -1187,14 +1190,35 @@
     });
   }
 
-  // Open Linear-Style Note Card
+  // Open Linear-Style Note Card with smart viewport positioning & edge-flipping
   function openNoteCard(item, pinEl) {
     cardsContainer.innerHTML = '';
 
     const scrollX = window.scrollX || 0;
     const scrollY = window.scrollY || 0;
-    const cardX = Math.min(Math.max(item.x - scrollX + 16, 20), window.innerWidth - 360);
-    const cardY = Math.min(Math.max(item.y - scrollY - 20, 20), window.innerHeight - 380);
+    const clientX = item.x - scrollX;
+    const clientY = item.y - scrollY;
+    const cardWidth = 390;
+    const cardHeight = 440;
+    const margin = 16;
+
+    // Horizontal placement: flip to left if near right edge
+    let cardX;
+    if (clientX + 16 + cardWidth > window.innerWidth - margin) {
+      cardX = clientX - cardWidth - 16;
+    } else {
+      cardX = clientX + 16;
+    }
+    cardX = Math.max(margin, Math.min(cardX, Math.max(margin, window.innerWidth - cardWidth - margin)));
+
+    // Vertical placement: flip above if near bottom edge
+    let cardY;
+    if (clientY + cardHeight > window.innerHeight - margin) {
+      cardY = clientY - cardHeight + 40;
+    } else {
+      cardY = clientY - 20;
+    }
+    cardY = Math.max(margin, Math.min(cardY, Math.max(margin, window.innerHeight - cardHeight - margin)));
 
     const card = document.createElement('div');
     card.className = 'vp-card';
