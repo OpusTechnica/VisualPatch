@@ -290,27 +290,26 @@ export default function DevAnnotator() {
         timestamp: new Date().toISOString()
       };
 
+      // 1. Instant Synchronous UI Feedback (0ms click latency)
       const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
       setActiveCard(newAnnotation);
 
-      // Async component snapshot auto-capture
-      (async () => {
+      // 2. Offload snapshot capture to background after modal pop-in animation completes
+      setTimeout(async () => {
         const snap = await captureAreaSnapshot(cropBox);
         if (snap) {
-          const finalUpdated = updated.map((item) =>
-            item.id === newAnnotation.id ? { ...item, screenshot: snap } : item
+          saveAnnotations((prev) =>
+            prev.map((item) => (item.id === newAnnotation.id ? { ...item, screenshot: snap } : item))
           );
-          saveAnnotations(finalUpdated);
           setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: snap } : prev));
         } else {
-          const finalUpdated = updated.map((item) =>
-            item.id === newAnnotation.id ? { ...item, screenshot: null } : item
+          saveAnnotations((prev) =>
+            prev.map((item) => (item.id === newAnnotation.id ? { ...item, screenshot: null } : item))
           );
-          saveAnnotations(finalUpdated);
           setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: null } : prev));
         }
-      })();
+      }, 140);
     };
 
     document.addEventListener('mousemove', handleMouseMove, true);
