@@ -341,6 +341,71 @@ export default function DevAnnotator() {
     return '#0b0d12';
   };
 
+  // Helper: Inline SVG CSS variables (fill="var(...)", stroke="var(...)", stop-color="var(...)") to solid RGB strings
+  const inlineSvgComputedStyles = (container) => {
+    if (!container || !(container instanceof Element)) return () => {};
+    const modifiedElements = [];
+    const svgElements = container.querySelectorAll('svg, svg *');
+
+    svgElements.forEach((el) => {
+      try {
+        const computed = window.getComputedStyle(el);
+        const originalInlineStyle = el.getAttribute('style') || '';
+        const originalAttrs = {
+          fill: el.getAttribute('fill'),
+          stroke: el.getAttribute('stroke'),
+          'stop-color': el.getAttribute('stop-color') || el.getAttribute('stopColor')
+        };
+
+        let needsRestore = false;
+
+        // 1. Resolve fill
+        const fillAttr = el.getAttribute('fill');
+        if (fillAttr && fillAttr.includes('var(')) {
+          el.setAttribute('fill', computed.fill || '#ffffff');
+          needsRestore = true;
+        }
+
+        // 2. Resolve stroke
+        const strokeAttr = el.getAttribute('stroke');
+        if (strokeAttr && strokeAttr.includes('var(')) {
+          el.setAttribute('stroke', computed.stroke || 'none');
+          needsRestore = true;
+        }
+
+        // 3. Resolve stop-color on gradient stops
+        if (el.tagName.toLowerCase() === 'stop') {
+          const stopColor = el.getAttribute('stop-color') || el.getAttribute('stopColor') || el.style.stopColor;
+          if (stopColor && stopColor.includes('var(')) {
+            el.setAttribute('stop-color', computed.stopColor || '#0071e3');
+            el.style.stopColor = computed.stopColor || '#0071e3';
+            needsRestore = true;
+          }
+        }
+
+        if (needsRestore) {
+          modifiedElements.push({ el, originalInlineStyle, originalAttrs });
+        }
+      } catch (e) {}
+    });
+
+    return () => {
+      modifiedElements.forEach(({ el, originalInlineStyle, originalAttrs }) => {
+        try {
+          if (originalInlineStyle) {
+            el.setAttribute('style', originalInlineStyle);
+          } else {
+            el.removeAttribute('style');
+          }
+          Object.entries(originalAttrs).forEach(([k, v]) => {
+            if (v !== null) el.setAttribute(k, v);
+            else el.removeAttribute(k);
+          });
+        } catch (e) {}
+      });
+    };
+  };
+
   // Fast, lag-free screenshot capture with Unified Coordinate Normalizer
   const captureAreaSnapshot = async (cropBox, targetElement) => {
     if (!cropBox || cropBox.width <= 0 || cropBox.height <= 0) return null;
@@ -352,10 +417,12 @@ export default function DevAnnotator() {
 
     // 1. Direct Pure DOM Element Capture for UI Components (Inspect Mode)
     if (targetElement && targetElement !== document.body && targetElement !== document.documentElement) {
+      let restoreSvg = () => {};
       try {
         const targetRect = targetElement.getBoundingClientRect();
         if (targetRect.width > 2 && targetRect.height > 2) {
           const effectiveBg = getEffectiveBackgroundColor(targetElement);
+          restoreSvg = inlineSvgComputedStyles(targetElement);
 
           const canvas = await htmlToImage.toCanvas(targetElement, {
             pixelRatio: dpr,
@@ -403,6 +470,8 @@ export default function DevAnnotator() {
         }
       } catch (err) {
         console.warn('[VisualPatch] Element DOM capture fallback:', err);
+      } finally {
+        restoreSvg();
       }
     }
 
@@ -450,6 +519,7 @@ export default function DevAnnotator() {
     }
 
     // 3. Ultra-Fast Pure DOM Section Capture for Marquee Area Screenshots
+    let restoreSvg = () => {};
     try {
       const centerX = cropBox.x + cropBox.width / 2;
       const centerY = cropBox.y + cropBox.height / 2;
@@ -471,6 +541,7 @@ export default function DevAnnotator() {
 
       const targetRect = containerEl.getBoundingClientRect();
       const effectiveBg = getEffectiveBackgroundColor(containerEl);
+      restoreSvg = inlineSvgComputedStyles(containerEl);
 
       const canvas = await htmlToImage.toCanvas(containerEl, {
         pixelRatio: dpr,
@@ -529,6 +600,8 @@ export default function DevAnnotator() {
     } catch (err) {
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
+    } finally {
+      restoreSvg();
     }
   };
 
