@@ -1259,12 +1259,21 @@
             <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">&lt;${item.tag}&gt;</span>
           `}
         </div>
-        <button class="vp-card-close" id="visualpatch-card-close-btn" title="Close (Esc)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="vp-pill-action-btn" id="vp-btn-resnap" title="Re-capture live component snapshot" style="font-size: 10.5px; padding: 2px 7px; height: 22px; display: inline-flex; align-items: center; gap: 4px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            <span>Re-snap</span>
+          </button>
+          <button class="vp-card-close" id="visualpatch-card-close-btn" title="Close (Esc)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="vp-card-preview" style="font-size: 11px; font-family: monospace;">
@@ -1308,6 +1317,45 @@
       card.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(item.screenshot));
       card.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(item.screenshot));
     }
+
+    card.querySelector('#vp-btn-resnap')?.addEventListener('click', async () => {
+      showToast('Re-capturing component snapshot...');
+      const targetEl = item.selector ? document.querySelector(item.selector) : null;
+      let box = item.cropBox;
+      if (targetEl) {
+        const r = targetEl.getBoundingClientRect();
+        const pad = 8;
+        const cx = Math.max(0, r.left - pad);
+        const cy = Math.max(0, r.top - pad);
+        box = {
+          x: cx,
+          y: cy,
+          width: Math.min(window.innerWidth - cx, r.width + pad * 2),
+          height: Math.min(window.innerHeight - cy, r.height + pad * 2)
+        };
+      }
+      if (!box) {
+        const scrollX = window.scrollX || 0;
+        const scrollY = window.scrollY || 0;
+        box = {
+          x: Math.max(0, item.x - scrollX - 50),
+          y: Math.max(0, item.y - scrollY - 30),
+          width: 100,
+          height: 60
+        };
+      }
+      item.screenshot = 'pending';
+      item.cropBox = box;
+      openNoteCard(item, pinEl);
+      const snap = await captureAreaNative(box);
+      if (snap) {
+        item.screenshot = snap;
+        saveStorage();
+        renderPins();
+        openNoteCard(item, pinEl);
+        showToast('📸 Component snapshot updated');
+      }
+    });
 
     const input = card.querySelector('#visualpatch-note-input');
     setTimeout(() => {
@@ -1807,7 +1855,7 @@
     tagBadge.textContent = `${el.tagName.toLowerCase()} [${Math.round(rect.width)}×${Math.round(rect.height)}]`;
   }, true);
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
     if (!isInspectMode || isScreenshotMode) return;
     if (e.target.closest('#visualpatch-host') || e.target.closest('#visualpatch-pins-layer')) return;
 
@@ -1827,6 +1875,14 @@
     const sourceInfo = getComponentSourceInfo(el);
     const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
+    // Compute exact component bounding box with 8px context padding
+    const pad = 8;
+    const cropX = Math.max(0, rect.left - pad);
+    const cropY = Math.max(0, rect.top - pad);
+    const cropW = Math.min(window.innerWidth - cropX, rect.width + pad * 2);
+    const cropH = Math.min(window.innerHeight - cropY, rect.height + pad * 2);
+    const cropBox = { x: cropX, y: cropY, width: Math.max(16, cropW), height: Math.max(16, cropH) };
+
     const newAnnotation = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
       number: currentPinNumber++,
@@ -1838,7 +1894,8 @@
       note: '',
       x: pinX,
       y: pinY,
-      screenshot: null,
+      screenshot: 'pending',
+      cropBox: cropBox,
       timestamp: new Date().toISOString()
     };
 
@@ -1846,11 +1903,32 @@
     saveStorage();
     renderPins();
 
+    let targetPinEl = null;
     setTimeout(() => {
       const pins = pinsContainer.querySelectorAll('.vp-pin');
-      const lastPin = pins[pins.length - 1];
-      if (lastPin) openNoteCard(newAnnotation, lastPin);
+      targetPinEl = pins[pins.length - 1];
+      if (targetPinEl) openNoteCard(newAnnotation, targetPinEl);
     }, 40);
+
+    // Auto-capture screenshot
+    try {
+      const snap = await captureAreaNative(cropBox);
+      if (snap) {
+        newAnnotation.screenshot = snap;
+        saveStorage();
+        renderPins();
+        const currentCard = cardsContainer.querySelector('.vp-card');
+        if (currentCard && targetPinEl) {
+          openNoteCard(newAnnotation, targetPinEl);
+        }
+      } else {
+        newAnnotation.screenshot = null;
+        saveStorage();
+      }
+    } catch (err) {
+      newAnnotation.screenshot = null;
+      saveStorage();
+    }
   }, true);
 
   // Global Keyboard Shortcuts (Capture Phase)

@@ -265,6 +265,14 @@ export default function DevAnnotator() {
       const sourceInfo = getComponentSourceInfo(el);
       const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
+      // Compute exact component bounding box with 8px context padding
+      const pad = 8;
+      const cropX = Math.max(0, rect.left - pad);
+      const cropY = Math.max(0, rect.top - pad);
+      const cropW = Math.min(window.innerWidth - cropX, rect.width + pad * 2);
+      const cropH = Math.min(window.innerHeight - cropY, rect.height + pad * 2);
+      const cropBox = { x: cropX, y: cropY, width: Math.max(16, cropW), height: Math.max(16, cropH) };
+
       const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
       const newAnnotation = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
@@ -277,13 +285,32 @@ export default function DevAnnotator() {
         note: '',
         x: pinX,
         y: pinY,
-        screenshot: null,
+        screenshot: 'pending',
+        cropBox: cropBox,
         timestamp: new Date().toISOString()
       };
 
       const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
       setActiveCard(newAnnotation);
+
+      // Async component snapshot auto-capture
+      (async () => {
+        const snap = await captureAreaSnapshot(cropBox);
+        if (snap) {
+          const finalUpdated = updated.map((item) =>
+            item.id === newAnnotation.id ? { ...item, screenshot: snap } : item
+          );
+          saveAnnotations(finalUpdated);
+          setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: snap } : prev));
+        } else {
+          const finalUpdated = updated.map((item) =>
+            item.id === newAnnotation.id ? { ...item, screenshot: null } : item
+          );
+          saveAnnotations(finalUpdated);
+          setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: null } : prev));
+        }
+      })();
     };
 
     document.addEventListener('mousemove', handleMouseMove, true);
@@ -1385,36 +1412,108 @@ export default function DevAnnotator() {
                   )}
                 </div>
 
-                <button
-                  onClick={() => setActiveCard(null)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ffffff';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#94a3b8';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                  }}
-                  title="Close (Esc)"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    onClick={async () => {
+                      if (!activeCard) return;
+                      showToast('Re-capturing component snapshot...');
+                      const el = activeCard.selector ? document.querySelector(activeCard.selector) : null;
+                      let box = activeCard.cropBox;
+                      if (el) {
+                        const r = el.getBoundingClientRect();
+                        const pad = 8;
+                        const cx = Math.max(0, r.left - pad);
+                        const cy = Math.max(0, r.top - pad);
+                        box = {
+                          x: cx,
+                          y: cy,
+                          width: Math.min(window.innerWidth - cx, r.width + pad * 2),
+                          height: Math.min(window.innerHeight - cy, r.height + pad * 2)
+                        };
+                      }
+                      if (!box) {
+                        const scrollX = window.scrollX || 0;
+                        const scrollY = window.scrollY || 0;
+                        box = {
+                          x: Math.max(0, activeCard.x - scrollX - 50),
+                          y: Math.max(0, activeCard.y - scrollY - 30),
+                          width: 100,
+                          height: 60
+                        };
+                      }
+                      setActiveCard((prev) => ({ ...prev, screenshot: 'pending' }));
+                      const snap = await captureAreaSnapshot(box);
+                      if (snap) {
+                        const updated = annotations.map((item) =>
+                          item.id === activeCard.id ? { ...item, screenshot: snap, cropBox: box } : item
+                        );
+                        saveAnnotations(updated);
+                        setActiveCard((prev) => ({ ...prev, screenshot: snap, cropBox: box }));
+                        showToast('📸 Component snapshot updated');
+                      }
+                    }}
+                    style={{
+                      padding: '2px 7px',
+                      borderRadius: '5px',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#cbd5e1',
+                      fontSize: '10.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                      e.currentTarget.style.color = '#ffffff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = '#cbd5e1';
+                    }}
+                    title="Re-capture live component snapshot"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    <span>Re-snap</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveCard(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#ffffff';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#94a3b8';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    }}
+                    title="Close (Esc)"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Source File & Selector / Snippet Preview */}
