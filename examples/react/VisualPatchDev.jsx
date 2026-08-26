@@ -341,70 +341,72 @@ export default function DevAnnotator() {
     return '#0b0d12';
   };
 
-  // Fast, lag-free screenshot capture
+  // Fast, lag-free screenshot capture with Unified Coordinate Normalizer
   const captureAreaSnapshot = async (cropBox, targetElement) => {
+    if (!cropBox || cropBox.width <= 0 || cropBox.height <= 0) return null;
+
     // Hide ONLY the inspect highlighter outline so it is not in the snapshot (KEEP note card visible!)
     if (highlighterRef.current) highlighterRef.current.style.display = 'none';
 
-    // 1. Direct Pure DOM Element Capture for UI Components (100% immune to feedback box / overlay capture)
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+    // 1. Direct Pure DOM Element Capture for UI Components (Inspect Mode)
     if (targetElement && targetElement !== document.body && targetElement !== document.documentElement) {
       try {
         const targetRect = targetElement.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
-        const effectiveBg = getEffectiveBackgroundColor(targetElement);
+        if (targetRect.width > 2 && targetRect.height > 2) {
+          const effectiveBg = getEffectiveBackgroundColor(targetElement);
 
-        const canvas = await htmlToImage.toCanvas(targetElement, {
-          pixelRatio: dpr,
-          cacheBust: false,
-          skipFonts: true,
-          backgroundColor: effectiveBg,
-          filter: (node) => {
-            if (!node) return false;
-            if (node instanceof HTMLElement || node.nodeType === 1) {
-              const id = node.id || '';
-              const className = typeof node.className === 'string' ? node.className : '';
-              if (
-                id.includes('annotator') ||
-                id.includes('visualpatch') ||
-                id.startsWith('vp-') ||
-                className.includes('vp-') ||
-                className.includes('highlighter') ||
-                (node.closest && (
-                  node.closest('#dev-annotator-fixed-root') ||
-                  node.closest('#dev-annotator-pins-root') ||
-                  node.closest('#visualpatch-host') ||
-                  node.closest('#visualpatch-pins-layer')
-                ))
-              ) {
-                return false;
+          const canvas = await htmlToImage.toCanvas(targetElement, {
+            pixelRatio: dpr,
+            cacheBust: false,
+            skipFonts: true,
+            backgroundColor: effectiveBg,
+            filter: (node) => {
+              if (!node) return false;
+              if (node instanceof HTMLElement || node.nodeType === 1) {
+                const id = node.id || '';
+                const className = typeof node.className === 'string' ? node.className : '';
+                if (
+                  id.includes('annotator') ||
+                  id.includes('visualpatch') ||
+                  id.startsWith('vp-') ||
+                  className.includes('vp-') ||
+                  className.includes('highlighter') ||
+                  (node.closest && (
+                    node.closest('#dev-annotator-fixed-root') ||
+                    node.closest('#dev-annotator-pins-root') ||
+                    node.closest('#visualpatch-host') ||
+                    node.closest('#visualpatch-pins-layer')
+                  ))
+                ) {
+                  return false;
+                }
               }
+              return true;
             }
-            return true;
+          });
+
+          if (canvas && canvas.width > 0 && canvas.height > 0) {
+            const pad = 8;
+            const padPx = Math.round(pad * dpr);
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = canvas.width + padPx * 2;
+            cropCanvas.height = canvas.height + padPx * 2;
+            const cropCtx = cropCanvas.getContext('2d');
+
+            cropCtx.fillStyle = effectiveBg;
+            cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+            cropCtx.drawImage(canvas, padPx, padPx, canvas.width, canvas.height);
+            return cropCanvas.toDataURL('image/png');
           }
-        });
-
-        const pad = 8;
-        const padPx = Math.round(pad * dpr);
-        const elementWidth = Math.max(1, Math.round(targetRect.width * dpr));
-        const elementHeight = Math.max(1, Math.round(targetRect.height * dpr));
-
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = elementWidth + padPx * 2;
-        cropCanvas.height = elementHeight + padPx * 2;
-        const cropCtx = cropCanvas.getContext('2d');
-
-        // Fill with theme background
-        cropCtx.fillStyle = effectiveBg;
-        cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
-        cropCtx.drawImage(canvas, padPx, padPx, elementWidth, elementHeight);
-
-        return cropCanvas.toDataURL('image/png');
+        }
       } catch (err) {
         console.warn('[VisualPatch] Element DOM capture fallback:', err);
       }
     }
 
-    // 2. Area Screenshot / Viewport Fallback (Used when dragging a marquee box)
+    // 2. Area Screenshot / Viewport Capture via Extension (if active)
     const isExtension = typeof chrome !== 'undefined' && Boolean(chrome.runtime?.id);
     if (isExtension && chrome.runtime?.sendMessage) {
       try {
@@ -419,21 +421,24 @@ export default function DevAnnotator() {
         ]);
 
         if (res && res.success && res.dataUrl) {
-          const dpr = window.devicePixelRatio || 1;
           const img = new Image();
           const cropped = await new Promise((resolve) => {
             img.onload = () => {
+              const imgW = img.naturalWidth || img.width;
+              const imgH = img.naturalHeight || img.height;
+              const scaleX = imgW / window.innerWidth;
+              const scaleY = imgH / window.innerHeight;
+
+              const sx = Math.max(0, Math.min(Math.round(cropBox.x * scaleX), imgW - 1));
+              const sy = Math.max(0, Math.min(Math.round(cropBox.y * scaleY), imgH - 1));
+              const sw = Math.max(1, Math.min(Math.round(cropBox.width * scaleX), imgW - sx));
+              const sh = Math.max(1, Math.min(Math.round(cropBox.height * scaleY), imgH - sy));
+
               const cropCanvas = document.createElement('canvas');
-              cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
-              cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
+              cropCanvas.width = sw;
+              cropCanvas.height = sh;
               const ctx = cropCanvas.getContext('2d');
-              ctx.drawImage(
-                img,
-                Math.round(cropBox.x * dpr), Math.round(cropBox.y * dpr),
-                Math.round(cropBox.width * dpr), Math.round(cropBox.height * dpr),
-                0, 0,
-                cropCanvas.width, cropCanvas.height
-              );
+              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
               resolve(cropCanvas.toDataURL('image/png'));
             };
             img.onerror = () => resolve(null);
@@ -444,14 +449,30 @@ export default function DevAnnotator() {
       } catch (e) {}
     }
 
-    // 3. Fallback Viewport Capture
+    // 3. Ultra-Fast Pure DOM Section Capture for Marquee Area Screenshots
     try {
-      const el = document.elementFromPoint(cropBox.x + cropBox.width / 2, cropBox.y + cropBox.height / 2) || document.body;
-      const targetRect = el.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
-      const effectiveBg = getEffectiveBackgroundColor(el);
+      const centerX = cropBox.x + cropBox.width / 2;
+      const centerY = cropBox.y + cropBox.height / 2;
+      const pointEl = (targetElement && targetElement !== document.body) ? targetElement : (document.elementFromPoint(centerX, centerY) || document.body);
+      
+      let containerEl = pointEl;
+      let curr = pointEl;
+      while (curr && curr !== document.body && curr !== document.documentElement) {
+        const r = curr.getBoundingClientRect();
+        if (r.left <= cropBox.x + 5 && r.top <= cropBox.y + 5 && r.right >= cropBox.x + cropBox.width - 5 && r.bottom >= cropBox.y + cropBox.height - 5) {
+          containerEl = curr;
+          break;
+        }
+        curr = curr.parentElement;
+      }
+      if (!containerEl || containerEl === document.body || containerEl === document.documentElement) {
+        containerEl = pointEl.closest?.('section, main, article, header, nav, footer, div[class*="container"]') || pointEl.parentElement || pointEl || document.body;
+      }
 
-      const canvas = await htmlToImage.toCanvas(el, {
+      const targetRect = containerEl.getBoundingClientRect();
+      const effectiveBg = getEffectiveBackgroundColor(containerEl);
+
+      const canvas = await htmlToImage.toCanvas(containerEl, {
         pixelRatio: dpr,
         cacheBust: false,
         skipFonts: true,
@@ -481,26 +502,30 @@ export default function DevAnnotator() {
         }
       });
 
-      const sourceX = (cropBox.x - targetRect.left) * dpr;
-      const sourceY = (cropBox.y - targetRect.top) * dpr;
-      const sourceW = cropBox.width * dpr;
-      const sourceH = cropBox.height * dpr;
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        const sourceX = Math.max(0, (cropBox.x - targetRect.left) * dpr);
+        const sourceY = Math.max(0, (cropBox.y - targetRect.top) * dpr);
+        const sourceW = Math.min(canvas.width - sourceX, cropBox.width * dpr);
+        const sourceH = Math.min(canvas.height - sourceY, cropBox.height * dpr);
 
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
-      cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
-      const cropCtx = cropCanvas.getContext('2d');
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
+        cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
+        const cropCtx = cropCanvas.getContext('2d');
 
-      cropCtx.fillStyle = effectiveBg;
-      cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+        cropCtx.fillStyle = effectiveBg;
+        cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
 
-      cropCtx.drawImage(
-        canvas,
-        sourceX, sourceY, sourceW, sourceH,
-        0, 0, cropCanvas.width, cropCanvas.height
-      );
-
-      return cropCanvas.toDataURL('image/png');
+        if (sourceW > 0 && sourceH > 0) {
+          cropCtx.drawImage(
+            canvas,
+            sourceX, sourceY, sourceW, sourceH,
+            0, 0, cropCanvas.width, cropCanvas.height
+          );
+        }
+        return cropCanvas.toDataURL('image/png');
+      }
+      return null;
     } catch (err) {
       console.error('[VisualPatch] Screenshot capture error:', err);
       return null;
@@ -524,7 +549,7 @@ export default function DevAnnotator() {
     };
 
     const handleMouseDown = (e) => {
-      if (e.target.closest('#dev-annotator-main-toolbar')) return;
+      if (e.target instanceof Element && e.target.closest('#dev-annotator-main-toolbar')) return;
       // Support Right Mouse Button (2) or Left Mouse Button (0)
       if (e.button !== 0 && e.button !== 2) return;
 
@@ -608,9 +633,6 @@ export default function DevAnnotator() {
       const pinX = Math.round(x + scrollX + 16);
       const pinY = Math.round(y + scrollY + 16);
 
-      // 1. Capture clean screenshot immediately while DOM is clean (zero cards, zero popups)
-      const screenshotDataUrl = await captureAreaSnapshot(cropRect);
-
       const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
       const nextNum = annotations.length > 0 ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
       const newAnnotation = {
@@ -624,15 +646,34 @@ export default function DevAnnotator() {
         note: '',
         x: pinX,
         y: pinY,
-        screenshot: screenshotDataUrl || null,
+        screenshot: 'pending',
+        cropBox: cropRect,
         timestamp: new Date().toISOString()
       };
 
-      // 2. Register annotation and open card with clean screenshot already ready
+      // 1. Instantly register annotation and open feedback card at 0ms (Zero mouse release lag!)
       const updated = [...annotations, newAnnotation];
       saveAnnotations(updated);
       setActiveCard(newAnnotation);
       showToast(`📸 Area pinned (#${nextNum})`);
+
+      // 2. Pre-flight capture immediately in background without blocking UI
+      setTimeout(async () => {
+        const snap = await captureAreaSnapshot(cropRect, el);
+        if (snap) {
+          const finalUpdated = updated.map((item) =>
+            item.id === newAnnotation.id ? { ...item, screenshot: snap } : item
+          );
+          saveAnnotations(finalUpdated);
+          setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: snap } : prev));
+        } else {
+          const finalUpdated = updated.map((item) =>
+            item.id === newAnnotation.id ? { ...item, screenshot: null } : item
+          );
+          saveAnnotations(finalUpdated);
+          setActiveCard((prev) => (prev && prev.id === newAnnotation.id ? { ...prev, screenshot: null } : prev));
+        }
+      }, 10);
     };
 
     window.addEventListener('contextmenu', handleContextMenu);

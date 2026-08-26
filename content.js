@@ -1157,18 +1157,21 @@
             const dpr = window.devicePixelRatio || 1;
             const img = new Image();
             img.onload = () => {
-              const cropCanvas = document.createElement('canvas');
-              cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
-              cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
-              const ctx = cropCanvas.getContext('2d');
+              const imgW = img.naturalWidth || img.width;
+              const imgH = img.naturalHeight || img.height;
+              const scaleX = imgW / window.innerWidth;
+              const scaleY = imgH / window.innerHeight;
 
-              ctx.drawImage(
-                img,
-                Math.round(cropBox.x * dpr), Math.round(cropBox.y * dpr),
-                Math.round(cropBox.width * dpr), Math.round(cropBox.height * dpr),
-                0, 0,
-                cropCanvas.width, cropCanvas.height
-              );
+              const sx = Math.max(0, Math.min(Math.round(cropBox.x * scaleX), imgW - 1));
+              const sy = Math.max(0, Math.min(Math.round(cropBox.y * scaleY), imgH - 1));
+              const sw = Math.max(1, Math.min(Math.round(cropBox.width * scaleX), imgW - sx));
+              const sh = Math.max(1, Math.min(Math.round(cropBox.height * scaleY), imgH - sy));
+
+              const cropCanvas = document.createElement('canvas');
+              cropCanvas.width = sw;
+              cropCanvas.height = sh;
+              const ctx = cropCanvas.getContext('2d');
+              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
 
               resolve(cropCanvas.toDataURL('image/png'));
             };
@@ -1514,9 +1517,6 @@
     const pinX = Math.round(x + scrollX + 16);
     const pinY = Math.round(y + scrollY + 16);
 
-    // 1. Capture snapshot immediately while DOM is 100% clean (zero cards, zero popups)
-    const screenshotDataUrl = await captureAreaNative(cropRect);
-
     const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const newAnnotation = {
       id: newId,
@@ -1529,21 +1529,61 @@
       note: '',
       x: pinX,
       y: pinY,
-      screenshot: screenshotDataUrl || null,
+      screenshot: 'pending',
+      cropBox: cropRect,
       timestamp: new Date().toISOString()
     };
 
-    // 2. Register annotation and render pin
+    // 1. Kick off pre-flight snapshot at t=0ms
+    const snapPromise = captureAreaNative(cropRect);
+
+    // 2. Register annotation and render pin immediately at 0ms (Zero mouse release lag!)
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
-    // 3. Open note card with clean screenshot already attached and ready
+    // 3. Open note card instantly at 0ms ready for immediate typing
     const pins = pinsContainer.querySelectorAll('.vp-pin');
     const lastPin = pins[pins.length - 1];
     if (lastPin) openNoteCard(newAnnotation, lastPin);
 
     showToast(`📸 Area pinned (#${newAnnotation.number})`);
+
+    // 4. Hydrate snapshot seamlessly when pre-flight capture resolves
+    snapPromise.then((snap) => {
+      if (snap) {
+        newAnnotation.screenshot = snap;
+        saveStorage();
+        renderPins();
+
+        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+        if (thumbPlaceholder) {
+          const thumbDiv = document.createElement('div');
+          thumbDiv.className = 'vp-thumbnail-box';
+          thumbDiv.style.cssText = 'margin-bottom: 8px; border-radius: 8px; flex-shrink: 0;';
+          thumbDiv.innerHTML = `
+            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" style="max-height: 90px; object-fit: contain;" />
+            <div class="vp-thumbnail-actions">
+              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
+              <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
+            </div>
+          `;
+          thumbPlaceholder.replaceWith(thumbDiv);
+          thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
+          thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
+        }
+      } else {
+        newAnnotation.screenshot = null;
+        saveStorage();
+        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+        if (thumbPlaceholder) thumbPlaceholder.remove();
+      }
+    }).catch(() => {
+      newAnnotation.screenshot = null;
+      saveStorage();
+      const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+      if (thumbPlaceholder) thumbPlaceholder.remove();
+    });
   });
 
   // Helper: Create a single auto-stitched composite image strip for multiple screenshots
