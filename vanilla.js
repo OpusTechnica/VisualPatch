@@ -1899,16 +1899,16 @@
       timestamp: new Date().toISOString()
     };
 
-    // 1. Instant Synchronous UI Feedback (0ms click latency)
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
+    // 1. Instantly open note card at 0ms with focus ready for immediate typing
     const pins = pinsContainer.querySelectorAll('.vp-pin');
     const targetPinEl = pins[pins.length - 1];
     if (targetPinEl) openNoteCard(newAnnotation, targetPinEl);
 
-    // 2. Offload snapshot capture to background task (zero UI thread freezing)
+    // 2. Capture component snapshot asynchronously in background without blocking UI
     setTimeout(async () => {
       try {
         const snap = await captureAreaNative(cropBox);
@@ -1917,35 +1917,35 @@
           saveStorage();
           renderPins();
 
-          // In-place surgical DOM replacement of the placeholder (zero re-render, zero loss of focus!)
-          const placeholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-          if (placeholder) {
-            const thumbBox = document.createElement('div');
-            thumbBox.className = 'vp-thumbnail-box';
-            thumbBox.innerHTML = `
+          // Seamlessly swap placeholder with thumbnail without re-rendering card or interrupting user typing
+          const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+          if (thumbPlaceholder) {
+            const thumbDiv = document.createElement('div');
+            thumbDiv.className = 'vp-thumbnail-box';
+            thumbDiv.innerHTML = `
               <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" />
               <div class="vp-thumbnail-actions">
                 <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
                 <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
               </div>
             `;
-            thumbBox.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
-            thumbBox.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
-            placeholder.replaceWith(thumbBox);
+            thumbPlaceholder.replaceWith(thumbDiv);
+            thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
+            thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
           }
         } else {
           newAnnotation.screenshot = null;
           saveStorage();
-          const placeholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-          if (placeholder) placeholder.remove();
+          const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+          if (thumbPlaceholder) thumbPlaceholder.remove();
         }
       } catch (err) {
         newAnnotation.screenshot = null;
         saveStorage();
-        const placeholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (placeholder) placeholder.remove();
+        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+        if (thumbPlaceholder) thumbPlaceholder.remove();
       }
-    }, 140);
+    }, 60);
   }, true);
 
   // Global Keyboard Shortcuts (Capture Phase)
