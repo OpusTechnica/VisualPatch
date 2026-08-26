@@ -1,10 +1,10 @@
-# 🎯 VisualPatch v2.0
+# 🎯 VisualPatch v2.2.0
 
 > **Universal In-Browser Visual Feedback & Autonomous UI Review Tool for AI Pair Programmers.**  
 > Effortlessly guide **Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, and Devin** with pinpoint visual precision and zero window switching.  
 > Crafted with an ultra-premium **CleanShot X + Apple Pro frosted glass aesthetic**.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/OpusTechnica/VisualPatch/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/OpusTechnica/VisualPatch/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![NPM Version](https://img.shields.io/npm/v/visualpatch.svg?color=cb3837)](https://www.npmjs.com/package/visualpatch)
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-success.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
@@ -20,7 +20,7 @@
 
 ---
 
-## ⚡ What Makes VisualPatch v2.0 Magical
+## ⚡ What Makes VisualPatch v2.2 Magical
 
 ### 🔄 The Zero-Window-Switching Live Loop
 
@@ -30,7 +30,7 @@
 
 | Step | Environment | What Happens Automatically |
 | :---: | :--- | :--- |
-| **`1`** | **🌐 Browser (`localhost`)** | Pin an element or crop an area (<kbd>S</kbd>), type your change request, and press **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>**. |
+| **`1`** | **🌐 Browser (`localhost`)** | Pin an element (auto-captures exact component crop) or crop an area (<kbd>S</kbd>), type notes, and hit **<kbd>Ctrl</kbd> + <kbd>Enter</kbd>**. |
 | **`2`** | **⚡ Bridge / Middleware** | Resolves exact component `<HeroSection />` and source file `src/components/HeroSection.jsx#L42`, saving to `.visualpatch/inbox.md`. |
 | **`3`** | **🤖 AI Agent (Auto-Wakeup)** | The IDE agent wakes up via **Reactive Task Wakeup** with **zero prompt tokens wasted** and applies the surgical fix. |
 | **`4`** | **✨ Vite HMR (Instant ~50ms)** | The browser hot-reloads and updates live—you **never** have to switch windows or copy-paste prompts! |
@@ -40,10 +40,12 @@
 ## 🚀 Key Features
 
 - ⚡ **Autonomous Live Review Loop (`/vp-live`)**: Edit frontend UI live directly from your browser without ever switching windows back to the IDE.
+- 🎯 **Precise Automatic Component Snapshot**: Instantly auto-captures the exact clicked UI component with theme-aware background fill ($8\text{px}$ context padding), interactive Zoom Lightbox, and PNG export.
+- 📸 **On-Demand `Re-snap`**: Live state re-capture button in note card header to snapshot dynamic UI changes (dropdowns, tabs, accordions) on the fly.
 - 🔍 **React Fiber & Component Source Inspector**: Automatically resolves the exact React/Vue component name (e.g. `<HeroSection />`) and source code file path + line number (`src/components/HeroSection.jsx#L42`).
-- 💎 **CleanShot X + Apple Pro Frosted Glass UI**: Obsidian acrylic dock with multi-layer depth shadows, subtle hairline borders, and hardware-accelerated micro-interactions.
-- 🎯 **Pixel-Perfect Element Inspector**: Hover over any DOM node with real-time bounding box highlighting and tag dimensions.
-- 📸 **Spotlight Area Screenshot Marquee Tool**: Drag a spotlight box over any element or section with true-color subject fidelity and live acrylic dimension capsule (`953 × 393 PX`).
+- 💎 **Apple Pro Segmented Split Capsule**: Minimalist joined glass action footer with clean draft save and single-accent Cobalt `⚡ Send to Agent` shortcut.
+- 🛡️ **Snug Pin Anchoring & Smart Edge-Flipping**: Snugs directly adjacent to the pin ($14\text{px}$) with gentle viewport clamping, preventing overflow on small screens or window edges.
+- 📸 **Spotlight Area Screenshot Marquee Tool**: Drag a spotlight box over any custom section (<kbd>S</kbd>) with live acrylic dimension capsule (`953 × 393 PX`).
 - 🖼️ **Auto-Stitched Multi-Screenshot Strip**: Capturing multiple screenshot pins automatically stitches them into **one consolidated image strip**, bypassing OS single-image clipboard limits.
 - 💾 **Zero-Token Local Artifact Storage**: Saves high-res crops as `.visualpatch/preview_1.png` on local disk, keeping prompt tokens under ~80 tokens (0 base64 waste).
 - ⌨️ **Intuitive Keyboard Flow**: Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to Send to Agent, <kbd>Enter</kbd> to save notes, <kbd>Esc</kbd> to toggle inspect mode, and <kbd>S</kbd> for area snapshots.

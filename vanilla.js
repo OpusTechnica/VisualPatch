@@ -1125,31 +1125,29 @@
 
   // Native GPU Tab Capture: 0ms DOM lag, captures directly from Chromium C++ GPU frame buffer
   async function captureAreaNative(cropBox) {
-    const roots = [
-      host,
+    const overlaysToHide = [
       pinsContainer,
-      document.getElementById('visualpatch-host'),
-      document.getElementById('visualpatch-pins-layer'),
-      document.getElementById('dev-annotator-fixed-root'),
-      document.getElementById('dev-annotator-pins-root')
+      highlighter,
+      marqueeBackdrop,
+      document.getElementById('visualpatch-pins-layer')
     ].filter(Boolean);
 
-    // Hide overlays BEFORE triggering the tab capture
-    roots.forEach((r) => (r.style.visibility = 'hidden'));
+    // Hide only pins and highlighters BEFORE triggering tab capture (KEEP feedback card visible!)
+    overlaysToHide.forEach((r) => (r.style.visibility = 'hidden'));
 
-    const restoreRoots = () => {
-      roots.forEach((r) => (r.style.visibility = 'visible'));
+    const restoreOverlays = () => {
+      overlaysToHide.forEach((r) => (r.style.visibility = 'visible'));
     };
 
     // Safety timer: restore visibility in at most 80ms
-    const timer = setTimeout(restoreRoots, 80);
+    const timer = setTimeout(restoreOverlays, 80);
 
     return new Promise((resolve) => {
       try {
         if (typeof chrome !== 'undefined' && chrome.runtime?.id && chrome.runtime?.sendMessage) {
           chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
             clearTimeout(timer);
-            restoreRoots();
+            restoreOverlays();
 
             if (!response || !response.success || !response.dataUrl) {
               resolve(null);
@@ -1162,7 +1160,7 @@
               const cropCanvas = document.createElement('canvas');
               cropCanvas.width = Math.max(1, Math.round(cropBox.width * dpr));
               cropCanvas.height = Math.max(1, Math.round(cropBox.height * dpr));
-              const ctx = cropCanvas.getContext('2d', { alpha: false });
+              const ctx = cropCanvas.getContext('2d');
 
               ctx.drawImage(
                 img,
@@ -1172,19 +1170,19 @@
                 cropCanvas.width, cropCanvas.height
               );
 
-              resolve(cropCanvas.toDataURL('image/jpeg', 0.9));
+              resolve(cropCanvas.toDataURL('image/png'));
             };
             img.onerror = () => resolve(null);
             img.src = response.dataUrl;
           });
         } else {
           clearTimeout(timer);
-          restoreRoots();
+          restoreOverlays();
           resolve(null);
         }
       } catch (err) {
         clearTimeout(timer);
-        restoreRoots();
+        restoreOverlays();
         resolve(null);
       }
     });
@@ -1899,53 +1897,53 @@
       timestamp: new Date().toISOString()
     };
 
+    // 1. Kick off pre-flight snapshot at t=0ms BEFORE note card is mounted to DOM
+    const snapPromise = captureAreaNative(cropBox);
+
+    // 2. Register annotation and render pin
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
-    // 1. Instantly open note card at 0ms with focus ready for immediate typing
+    // 3. Instantly open note card at 0ms with focus ready for immediate typing
     const pins = pinsContainer.querySelectorAll('.vp-pin');
     const targetPinEl = pins[pins.length - 1];
     if (targetPinEl) openNoteCard(newAnnotation, targetPinEl);
 
-    // 2. Capture component snapshot asynchronously in background without blocking UI
-    setTimeout(async () => {
-      try {
-        const snap = await captureAreaNative(cropBox);
-        if (snap) {
-          newAnnotation.screenshot = snap;
-          saveStorage();
-          renderPins();
+    // 4. Mount snapshot seamlessly when pre-flight capture resolves
+    snapPromise.then((snap) => {
+      if (snap) {
+        newAnnotation.screenshot = snap;
+        saveStorage();
+        renderPins();
 
-          // Seamlessly swap placeholder with thumbnail without re-rendering card or interrupting user typing
-          const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-          if (thumbPlaceholder) {
-            const thumbDiv = document.createElement('div');
-            thumbDiv.className = 'vp-thumbnail-box';
-            thumbDiv.innerHTML = `
-              <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" />
-              <div class="vp-thumbnail-actions">
-                <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
-                <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
-              </div>
-            `;
-            thumbPlaceholder.replaceWith(thumbDiv);
-            thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
-            thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
-          }
-        } else {
-          newAnnotation.screenshot = null;
-          saveStorage();
-          const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-          if (thumbPlaceholder) thumbPlaceholder.remove();
+        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+        if (thumbPlaceholder) {
+          const thumbDiv = document.createElement('div');
+          thumbDiv.className = 'vp-thumbnail-box';
+          thumbDiv.innerHTML = `
+            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" />
+            <div class="vp-thumbnail-actions">
+              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
+              <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
+            </div>
+          `;
+          thumbPlaceholder.replaceWith(thumbDiv);
+          thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
+          thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
         }
-      } catch (err) {
+      } else {
         newAnnotation.screenshot = null;
         saveStorage();
         const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
         if (thumbPlaceholder) thumbPlaceholder.remove();
       }
-    }, 60);
+    }).catch(() => {
+      newAnnotation.screenshot = null;
+      saveStorage();
+      const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
+      if (thumbPlaceholder) thumbPlaceholder.remove();
+    });
   }, true);
 
   // Global Keyboard Shortcuts (Capture Phase)
