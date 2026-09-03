@@ -1421,14 +1421,59 @@
     }
   }
 
+  function ensureGlobalPinStyles() {
+    if (document.getElementById('visualpatch-global-pin-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'visualpatch-global-pin-styles';
+    s.textContent = `
+      #visualpatch-pins-layer {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        pointer-events: none !important;
+        z-index: 2147483640 !important;
+      }
+      .vp-pin {
+        position: absolute !important;
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 50% !important;
+        background: #0071e3 !important;
+        color: #ffffff !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+        cursor: pointer !important;
+        z-index: 2147483642 !important;
+        pointer-events: auto !important;
+        transform: translate(-50%, -50%) !important;
+        user-select: none !important;
+        transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease !important;
+      }
+      .vp-pin:hover {
+        transform: translate(-50%, -50%) scale(1.18) !important;
+        box-shadow: 0 6px 18px rgba(0, 113, 227, 0.65), 0 0 0 2px #ffffff !important;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(s);
+  }
+
   // Render Document Pin Markers
   function renderPins() {
+    ensureGlobalPinStyles();
     if (!pinsContainer || !document.body?.contains(pinsContainer)) {
       pinsContainer = document.getElementById('visualpatch-pins-layer');
       if (!pinsContainer) {
         pinsContainer = document.createElement('div');
         pinsContainer.id = 'visualpatch-pins-layer';
-        pinsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 2147483640;';
+        pinsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2147483640;';
         document.body?.appendChild(pinsContainer);
       }
     }
@@ -1438,9 +1483,40 @@
       const pin = document.createElement('div');
       pin.className = 'vp-pin';
       pin.textContent = item.number;
-      pin.style.left = `${item.x}px`;
-      pin.style.top = `${item.y}px`;
+      pin.style.cssText = `
+        position: absolute !important;
+        left: ${item.x}px !important;
+        top: ${item.y}px !important;
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 50% !important;
+        background: #0071e3 !important;
+        color: #ffffff !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+        cursor: pointer !important;
+        z-index: 2147483642 !important;
+        pointer-events: auto !important;
+        transform: translate(-50%, -50%) !important;
+        user-select: none !important;
+        transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease !important;
+      `;
       pin.title = `Pin #${item.number}: ${item.note || 'Click to edit'}`;
+
+      pin.addEventListener('mouseenter', () => {
+        pin.style.transform = 'translate(-50%, -50%) scale(1.18)';
+        pin.style.boxShadow = '0 6px 18px rgba(0, 113, 227, 0.65), 0 0 0 2px #ffffff';
+      });
+      pin.addEventListener('mouseleave', () => {
+        pin.style.transform = 'translate(-50%, -50%) scale(1)';
+        pin.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.5)';
+      });
 
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
