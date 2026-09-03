@@ -1,15 +1,21 @@
 /**
- * VisualPatch — Universal In-Browser Visual Feedback Tool for AI Coding Assistants
- * Compatible with Claude, Cursor, ChatGPT, Windsurf, Copilot, Antigravity, v0, Devin, etc.
- * Features: Element Inspection, Area Screenshot Marquee Tool, Dynamic Anchors, Linear/Apple Glass UI
+ * VisualPatch v2.3.0 — Universal In-Browser Visual Feedback for AI Coding Assistants
+ * Compatible with Claude, Cursor, Windsurf, Copilot, ChatGPT, Antigravity, Devin
+ * Features: Native GPU Framebuffer Tab Capture, Main-World Stamped Token Framework Introspection,
+ * High-DPI Retina Cropping, OS-Level Hotkeys, Isolated Shadow DOM Dock
  */
+
 (function () {
+  // Prevent duplicate instances
+  if (window.__visualpatch_loaded) return;
+  window.__visualpatch_loaded = true;
+
+  // Environment & Staging Detection
   const hostname = window.location.hostname || '';
   const port = window.location.port || '';
   const protocol = window.location.protocol || '';
 
-  // Comprehensive dev environment detection (all ports, localhost, loopback, private LAN IPs, dev domains, local files)
-  const isLocal =
+  const isLocalOrPreview =
     ['localhost', '127.0.0.1', '0.0.0.0', '::1', ''].includes(hostname) ||
     port !== '' ||
     hostname.endsWith('.local') ||
@@ -20,17 +26,23 @@
     /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname) ||
     hostname.includes('.nip.io') ||
     hostname.includes('.sslip.io') ||
+    hostname.includes('.vercel.app') ||
+    hostname.includes('.netlify.app') ||
+    hostname.includes('.pages.dev') ||
+    hostname.includes('.railway.app') ||
+    hostname.includes('.onrender.com') ||
+    hostname.includes('.fly.dev') ||
+    hostname.includes('.app.github.dev') ||
+    hostname.includes('.gitpod.io') ||
+    hostname.includes('.csb.app') ||
+    hostname.includes('.webcontainer.io') ||
     hostname.includes('ngrok') ||
     hostname.includes('loca.lt') ||
     hostname.includes('trycloudflare.com') ||
     protocol === 'file:';
 
-  if (!isLocal) return;
-
-  if (window.__visualpatch_loaded || window.__visualpatch_in_app_active || document.getElementById('dev-annotator-fixed-root')) return;
-  window.__visualpatch_loaded = true;
-
   // Global State
+  let isMounted = false;
   let isInspectMode = false;
   let isScreenshotMode = false;
   let isVisible = true;
@@ -38,35 +50,42 @@
   let currentPinNumber = 1;
   let hoveredElement = null;
   let currentPos = { x: null, y: null };
-  let zoomImageUrl = null;
 
-  // Dragging State
-  let isDragging = false;
-  let dragStartX = 0, dragStartY = 0;
-  let initialLeft = 0, initialTop = 0;
 
   // Marquee Drag State
   let isMarqueeDragging = false;
   let marqueeStartX = 0, marqueeStartY = 0;
 
-  // Viewport Boundary Sanitizer (Prevents off-screen toolbar rendering)
+  // Keepalive Port to maintain Background Service Worker responsiveness
+  let keepalivePort = null;
+  function ensureKeepalive() {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.connect && !keepalivePort) {
+      try {
+        keepalivePort = chrome.runtime.connect({ name: 'visualpatch-keepalive' });
+        keepalivePort.onDisconnect.addListener(() => {
+          keepalivePort = null;
+        });
+      } catch (e) {}
+    }
+  }
+
+  // Load Saved Position
   function sanitizePos(pos) {
     if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
       return { x: null, y: null };
     }
-    const margin = 16;
-    const dockWidth = 44;
-    const dockHeight = 240;
+    const margin = 10;
+    const isMobile = window.innerWidth <= 768;
+    const dockWidth = isMobile ? 220 : 44;
+    const dockHeight = isMobile ? 44 : 240;
     const maxX = Math.max(margin, window.innerWidth - dockWidth - margin);
     const maxY = Math.max(margin, window.innerHeight - dockHeight - margin);
-
-    if (pos.x < margin || pos.x > maxX || pos.y < margin || pos.y > maxY) {
-      return { x: null, y: null };
-    }
-    return { x: pos.x, y: pos.y };
+    return {
+      x: Math.max(margin, Math.min(pos.x, maxX)),
+      y: Math.max(margin, Math.min(pos.y, maxY))
+    };
   }
 
-  // Load Saved Position & Validate
   try {
     const savedPos = localStorage.getItem('visualpatch_toolbar_pos');
     if (savedPos) currentPos = sanitizePos(JSON.parse(savedPos));
@@ -74,12 +93,13 @@
     currentPos = { x: null, y: null };
   }
 
-  // Create Shadow Root Host
+  // Mount Shadow Root Host
   const host = document.createElement('div');
   host.id = 'visualpatch-host';
   host.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 0; pointer-events: none; z-index: 2147483647;';
-  
+
   function mountHost() {
+    if (isMounted) return;
     if (!document.body) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', mountHost, { once: true });
@@ -89,17 +109,13 @@
     if (!document.body.contains(host)) {
       document.body.appendChild(host);
     }
+    isMounted = true;
+    ensureKeepalive();
   }
-  mountHost();
-
-  // Re-verify mounting after window load & SPA framework hydration
-  window.addEventListener('load', mountHost);
-  setTimeout(mountHost, 500);
-  setTimeout(mountHost, 1500);
 
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Inject Shadow DOM Styles
+  // Embedded Stylesheet (Apple Glass / Linear Design System)
   const styleEl = document.createElement('style');
   styleEl.textContent = `
     * {
@@ -110,7 +126,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Floating Toolbar (Vertical Obsidian Glass Dock) */
     .vp-toolbar {
       position: fixed;
       bottom: 24px;
@@ -121,28 +136,32 @@
       align-items: center;
       gap: 5px;
       padding: 6px 4px;
-      background: rgba(14, 16, 20, 0.94);
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: #0c0d12;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 9999px;
-      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.25);
       color: #f8fafc;
       pointer-events: auto;
       user-select: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
       touch-action: none;
       width: 38px;
+      height: fit-content;
+      max-height: calc(100vh - 16px);
+      box-sizing: border-box;
     }
 
     .vp-toolbar.vp-dragging {
-      opacity: 0.94;
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      border-color: #0071e3;
+      opacity: 0.98;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+      border-color: #0071e3 !important;
       cursor: grabbing !important;
+      transition: none !important;
+      background: #0c0d12 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
     }
 
-    /* Drag Handle / Brand Badge */
     .vp-brand-badge {
       display: inline-flex;
       align-items: center;
@@ -222,7 +241,6 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     }
 
-    /* Collapsed Dynamic Island Capsule */
     .vp-collapsed-pill {
       position: fixed;
       bottom: 24px;
@@ -231,32 +249,38 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      padding: 6px 12px;
-      background: rgba(14, 16, 20, 0.94);
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      background: #0c0d12;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 9999px;
       color: #ffffff;
       font-size: 11px;
       font-weight: 600;
       cursor: grab;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
       pointer-events: auto;
       user-select: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+      height: fit-content;
+      box-sizing: border-box;
+      touch-action: none;
     }
 
     .vp-collapsed-pill:hover {
-      background: rgba(22, 25, 33, 0.96);
-      border-color: rgba(0, 113, 227, 0.4);
+      background: #13161f;
+      border-color: rgba(255, 255, 255, 0.32);
+      transform: scale(1.02);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
-    .vp-collapsed-pill:active {
-      transform: scale(0.97);
+    .vp-collapsed-pill.vp-dragging {
+      cursor: grabbing !important;
+      transition: none !important;
+      border-color: #0071e3 !important;
+      background: #0c0d12 !important;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* Precision Highlighter */
     .vp-highlighter {
       position: fixed;
       border: 1.5px solid #0071e3;
@@ -286,7 +310,6 @@
       backdrop-filter: blur(12px);
     }
 
-    /* Marquee Area Selection Layer (CleanShot X / macOS Studio Grade) */
     .vp-marquee-backdrop {
       position: fixed;
       inset: 0;
@@ -330,7 +353,6 @@
       gap: 6px;
     }
 
-    /* Pin Marker */
     .vp-pin {
       position: absolute;
       width: 24px;
@@ -351,6 +373,7 @@
       pointer-events: auto;
       transform: translate(-50%, -50%);
       transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+      user-select: none;
     }
 
     .vp-pin:hover {
@@ -358,11 +381,6 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
     }
 
-    .vp-pin:active {
-      transform: translate(-50%, -50%) scale(0.96);
-    }
-
-    /* Linear / Apple Glass Modal Card */
     .vp-card {
       position: fixed;
       width: 390px;
@@ -387,6 +405,27 @@
     @keyframes vp-pop {
       from { transform: scale(0.97) translateY(4px); opacity: 0; }
       to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .vp-toolbar {
+        flex-direction: row !important;
+        width: auto !important;
+        height: 44px !important;
+        padding: 5px 8px !important;
+        gap: 7px !important;
+      }
+      .vp-card {
+        width: auto !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        top: auto !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: 82vh !important;
+        padding: 14px 14px !important;
+        border-radius: 16px !important;
+      }
     }
 
     .vp-card-header {
@@ -459,7 +498,7 @@
 
     .vp-thumbnail-img {
       width: 100%;
-      height: 100px;
+      height: 110px;
       object-fit: cover;
       display: block;
       cursor: zoom-in;
@@ -493,10 +532,11 @@
 
     .vp-textarea {
       width: 100%;
-      height: 72px;
-      background: rgba(0, 0, 0, 0.5);
+      height: 68px;
+      box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
+      border-radius: 9px;
       color: #f8fafc;
       padding: 8px 10px;
       font-size: 12.5px;
@@ -605,12 +645,6 @@
       background: #007dfc;
     }
 
-    .vp-btn-agent-send:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.45);
-    }
-
-    /* Zoom Lightbox Modal */
     .vp-lightbox-modal {
       position: fixed;
       inset: 0;
@@ -645,7 +679,6 @@
       object-fit: contain;
     }
 
-    /* Toast */
     .vp-toast {
       position: fixed;
       top: 20px;
@@ -677,7 +710,7 @@
   `;
   shadow.appendChild(styleEl);
 
-  // Create UI Elements
+  // Highlighting & Overlays
   const highlighter = document.createElement('div');
   highlighter.className = 'vp-highlighter';
   const tagBadge = document.createElement('div');
@@ -685,7 +718,6 @@
   highlighter.appendChild(tagBadge);
   shadow.appendChild(highlighter);
 
-  // Marquee Area Selection Layer
   const marqueeBackdrop = document.createElement('div');
   marqueeBackdrop.className = 'vp-marquee-backdrop';
   const marqueeBox = document.createElement('div');
@@ -695,10 +727,6 @@
     <div style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-top: 2.5px solid #0071e3; border-right: 2.5px solid #0071e3;"></div>
     <div style="position: absolute; bottom: -2px; left: -2px; width: 8px; height: 8px; border-bottom: 2.5px solid #0071e3; border-left: 2.5px solid #0071e3;"></div>
     <div style="position: absolute; bottom: -2px; right: -2px; width: 8px; height: 8px; border-bottom: 2.5px solid #0071e3; border-right: 2.5px solid #0071e3;"></div>
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; opacity: 0.6; pointer-events: none;">
-      <div style="position: absolute; top: 5px; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.75); box-shadow: 0 0 2px rgba(0,0,0,0.8);"></div>
-      <div style="position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.75); box-shadow: 0 0 2px rgba(0,0,0,0.8);"></div>
-    </div>
   `;
   const marqueeDim = document.createElement('div');
   marqueeDim.className = 'vp-marquee-dim';
@@ -706,7 +734,7 @@
   marqueeBackdrop.appendChild(marqueeBox);
   shadow.appendChild(marqueeBackdrop);
 
-  // Lightbox Zoom Modal
+  // Lightbox Modal
   const lightboxModal = document.createElement('div');
   lightboxModal.className = 'vp-lightbox-modal';
   lightboxModal.innerHTML = `
@@ -719,7 +747,6 @@
     </div>
   `;
   shadow.appendChild(lightboxModal);
-
   lightboxModal.addEventListener('click', () => lightboxModal.style.display = 'none');
   shadow.getElementById('vp-lightbox-box').addEventListener('click', (e) => e.stopPropagation());
   shadow.getElementById('vp-lightbox-close').addEventListener('click', () => lightboxModal.style.display = 'none');
@@ -729,13 +756,13 @@
     lightboxModal.style.display = 'flex';
   }
 
-  // Pins Container (Mounted on document.body for true scrolling coordinates)
+  // Pins Layer (Document-anchored layer with strict scoped styles)
   let pinsContainer = document.getElementById('visualpatch-pins-layer');
   if (!pinsContainer) {
     pinsContainer = document.createElement('div');
     pinsContainer.id = 'visualpatch-pins-layer';
     pinsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 2147483640;';
-    document.body.appendChild(pinsContainer);
+    document.body?.appendChild(pinsContainer);
   }
 
   const cardsContainer = document.createElement('div');
@@ -745,25 +772,27 @@
   toast.className = 'vp-toast';
   shadow.appendChild(toast);
 
+  let toastTimer = null;
   function showToast(msg) {
+    if (toastTimer) clearTimeout(toastTimer);
     toast.innerHTML = `<span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span><span>${msg}</span>`;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2800);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
   }
 
-  // Create Full Toolbar
+  // Toolbar Element
   const toolbar = document.createElement('div');
   toolbar.className = 'vp-toolbar';
   toolbar.id = 'visualpatch-main-toolbar';
   if (currentPos.x !== null && currentPos.y !== null) {
+    toolbar.style.bottom = 'auto';
+    toolbar.style.right = 'auto';
     toolbar.style.left = `${currentPos.x}px`;
     toolbar.style.top = `${currentPos.y}px`;
-    toolbar.style.right = 'auto';
-    toolbar.style.bottom = 'auto';
   }
   toolbar.innerHTML = `
-    <div class="vp-brand-badge" id="visualpatch-brand-btn" title="Drag to move toolbar anywhere">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display: block;">
+    <div class="vp-brand-badge" id="visualpatch-brand-btn" title="Drag to reposition VisualPatch">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M3 9V3H9" stroke="#0071E3" stroke-width="2.8" stroke-linecap="square"/>
         <path d="M21 15V21H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="square"/>
         <path d="M7 8L12 17L17 8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -771,199 +800,217 @@
         <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
     </div>
-    <div style="width: 16px; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0;"></div>
-    <button class="vp-btn-icon" id="visualpatch-btn-inspect" title="Inspect & Drop Pin (Esc / Alt+D)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="22" y1="12" x2="18" y2="12" />
-        <line x1="6" y1="12" x2="2" y2="12" />
-        <line x1="12" y1="6" x2="12" y2="2" />
-        <line x1="12" y1="22" x2="12" y2="18" />
-        <circle cx="12" cy="12" r="3" />
+    <button class="vp-btn-icon" id="visualpatch-btn-inspect" title="Inspect & Pin Element (Alt+D)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" /><line x1="22" y1="12" x2="18" y2="12" /><line x1="6" y1="12" x2="2" y2="12" /><line x1="12" y1="6" x2="12" y2="2" /><line x1="12" y1="22" x2="12" y2="18" />
       </svg>
     </button>
-    <button class="vp-btn-icon" id="visualpatch-btn-screenshot" title="Take Area Screenshot (Press S)">
-      <svg width="14.5" height="14.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-        <circle cx="12" cy="13" r="4" />
+    <button class="vp-btn-icon" id="visualpatch-btn-screenshot" title="Capture Area Snapshot (Alt+S)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 2v4M2 6h4M18 2v4M22 6h-4M6 22v-4M2 18h4M18 22v-4M22 18h-4" />
       </svg>
     </button>
-    <button class="vp-btn-icon" id="visualpatch-btn-send-agent" title="⚡ Send to Agent Inbox (Ctrl+Enter)" style="color: #ffffff;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <button class="vp-btn-icon" id="visualpatch-btn-send-agent" title="Send All Pins Directly to Agent (Ctrl+Enter)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
       </svg>
-      <span class="vp-badge-count" id="visualpatch-agent-count" style="display: none; background: #ffffff; color: #0071e3;">0</span>
+      <span class="vp-badge-count" id="visualpatch-agent-count" style="display: none;">0</span>
     </button>
-    <button class="vp-btn-icon" id="visualpatch-btn-copy" title="Copy annotations for AI (Ctrl+C)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    <button class="vp-btn-icon" id="visualpatch-btn-copy" title="Copy Feedback for AI (Ctrl+C)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
       </svg>
       <span class="vp-badge-count" id="visualpatch-count" style="display: none;">0</span>
     </button>
     <button class="vp-btn-icon" id="visualpatch-btn-clear" title="Clear all pins on this page">
-      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       </svg>
     </button>
-    <button class="vp-btn-icon" id="visualpatch-btn-minimize" title="Hide toolbar (Alt+T)">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
+    <button class="vp-btn-icon" id="visualpatch-btn-minimize" title="Collapse Toolbar (Alt+T)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4 14 10 14 10 20" />
+        <polyline points="20 10 14 10 14 4" />
       </svg>
     </button>
   `;
   shadow.appendChild(toolbar);
 
-  // Collapsed Dynamic Island Capsule
   const collapsedPill = document.createElement('div');
   collapsedPill.className = 'vp-collapsed-pill';
   collapsedPill.style.display = 'none';
   if (currentPos.x !== null && currentPos.y !== null) {
+    collapsedPill.style.bottom = 'auto';
+    collapsedPill.style.right = 'auto';
     collapsedPill.style.left = `${currentPos.x}px`;
     collapsedPill.style.top = `${currentPos.y}px`;
-    collapsedPill.style.right = 'auto';
-    collapsedPill.style.bottom = 'auto';
   }
   collapsedPill.innerHTML = `
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="display: block;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
       <path d="M3 9V3H9" stroke="#0071E3" stroke-width="2.8" stroke-linecap="square"/>
       <path d="M21 15V21H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="square"/>
       <path d="M7 8L12 17L17 8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="12" y1="9.5" x2="12" y2="12.5" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
-      <line x1="10.5" y1="11" x2="13.5" y2="11" stroke="#0071E3" stroke-width="1.6" stroke-linecap="round"/>
     </svg>
-    <span style="font-size: 11px; font-weight: 700; letter-spacing: -0.01em;">VisualPatch</span>
+    <span style="font-size: 11px; font-weight: 700;">VisualPatch</span>
     <span class="vp-badge-count" id="visualpatch-pill-count" style="display: none; position: static; margin-left: 2px;">0</span>
   `;
   shadow.appendChild(collapsedPill);
 
-  // Drag Handling for Toolbar
+  // Dragging & Collapse Controller for Toolbar & Collapsed Pill
   const brandBtn = shadow.getElementById('visualpatch-brand-btn');
+  let isDraggingToolbar = false;
+  let isDraggingPill = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let initialLeft = 0;
+  let initialTop = 0;
+  let currentTargetWidth = 38;
+  let currentTargetHeight = 260;
+  let dragDistance = 0;
 
-  function onMouseDown(e) {
+  function onMouseDownToolbar(e) {
     if (e.button !== 0) return;
-    isDragging = true;
+    isDraggingToolbar = true;
+    dragDistance = 0;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
 
     const rect = toolbar.getBoundingClientRect();
     initialLeft = rect.left;
     initialTop = rect.top;
+    currentTargetWidth = rect.width || 38;
+    currentTargetHeight = rect.height || 260;
+
+    toolbar.style.bottom = 'auto';
+    toolbar.style.right = 'auto';
+    collapsedPill.style.bottom = 'auto';
+    collapsedPill.style.right = 'auto';
 
     toolbar.classList.add('vp-dragging');
+    window.addEventListener('mousemove', onMouseMove, { passive: false });
+    window.addEventListener('mouseup', onMouseUp, { once: true });
+    e.preventDefault();
+  }
 
+  function onMouseDownPill(e) {
+    if (e.button !== 0) return;
+    isDraggingPill = true;
+    dragDistance = 0;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const rect = collapsedPill.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+    currentTargetWidth = rect.width || 110;
+    currentTargetHeight = rect.height || 34;
+
+    collapsedPill.style.bottom = 'auto';
+    collapsedPill.style.right = 'auto';
+    toolbar.style.bottom = 'auto';
+    toolbar.style.right = 'auto';
+
+    collapsedPill.classList.add('vp-dragging');
     window.addEventListener('mousemove', onMouseMove, { passive: false });
     window.addEventListener('mouseup', onMouseUp, { once: true });
     e.preventDefault();
   }
 
   function onMouseMove(e) {
-    if (!isDragging) return;
+    if (!isDraggingToolbar && !isDraggingPill) return;
+
     const deltaX = e.clientX - dragStartX;
     const deltaY = e.clientY - dragStartY;
+    dragDistance = Math.hypot(deltaX, deltaY);
 
-    const rect = toolbar.getBoundingClientRect();
-    const maxX = window.innerWidth - rect.width - 8;
-    const maxY = window.innerHeight - rect.height - 8;
-
+    const maxX = window.innerWidth - currentTargetWidth - 8;
+    const maxY = window.innerHeight - currentTargetHeight - 8;
     const newLeft = Math.max(8, Math.min(initialLeft + deltaX, maxX));
     const newTop = Math.max(8, Math.min(initialTop + deltaY, maxY));
 
-    toolbar.style.left = `${newLeft}px`;
-    toolbar.style.top = `${newTop}px`;
-    toolbar.style.right = 'auto';
-    toolbar.style.bottom = 'auto';
+    if (isDraggingToolbar) {
+      toolbar.style.left = `${newLeft}px`;
+      toolbar.style.top = `${newTop}px`;
 
-    collapsedPill.style.left = `${newLeft}px`;
-    collapsedPill.style.top = `${newTop}px`;
-    collapsedPill.style.right = 'auto';
-    collapsedPill.style.bottom = 'auto';
+      const safePillX = Math.max(8, Math.min(newLeft, window.innerWidth - 118));
+      collapsedPill.style.left = `${safePillX}px`;
+      collapsedPill.style.top = `${newTop}px`;
+    } else if (isDraggingPill) {
+      collapsedPill.style.left = `${newLeft}px`;
+      collapsedPill.style.top = `${newTop}px`;
+
+      const safeToolbarX = Math.max(8, Math.min(newLeft, window.innerWidth - 46));
+      toolbar.style.left = `${safeToolbarX}px`;
+      toolbar.style.top = `${newTop}px`;
+    }
 
     currentPos = { x: newLeft, y: newTop };
-    try {
-      localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify(currentPos));
-    } catch (err) {}
+    try { localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify(currentPos)); } catch (err) {}
   }
 
-  function onMouseUp(e) {
-    if (!isDragging) return;
-    isDragging = false;
+  function onMouseUp() {
+    isDraggingToolbar = false;
+    isDraggingPill = false;
     toolbar.classList.remove('vp-dragging');
+    collapsedPill.classList.remove('vp-dragging');
     window.removeEventListener('mousemove', onMouseMove);
   }
 
-  brandBtn.addEventListener('mousedown', onMouseDown);
-
-  // Drag & Click for Collapsed Pill
-  collapsedPill.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    let hasMoved = false;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const rect = collapsedPill.getBoundingClientRect();
-    const initX = rect.left;
-    const initY = rect.top;
-
-    const onPillMove = (moveEvt) => {
-      const dist = Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY);
-      if (dist > 3) {
-        hasMoved = true;
-        const deltaX = moveEvt.clientX - startX;
-        const deltaY = moveEvt.clientY - startY;
-        const maxX = window.innerWidth - rect.width - 8;
-        const maxY = window.innerHeight - rect.height - 8;
-        const newX = Math.max(8, Math.min(initX + deltaX, maxX));
-        const newY = Math.max(8, Math.min(initY + deltaY, maxY));
-
-        collapsedPill.style.left = `${newX}px`;
-        collapsedPill.style.top = `${newY}px`;
-        collapsedPill.style.right = 'auto';
-        collapsedPill.style.bottom = 'auto';
-
-        toolbar.style.left = `${newX}px`;
-        toolbar.style.top = `${newY}px`;
-        toolbar.style.right = 'auto';
-        toolbar.style.bottom = 'auto';
-
-        currentPos = { x: newX, y: newY };
-        try {
-          localStorage.setItem('visualpatch_toolbar_pos', JSON.stringify(currentPos));
-        } catch (err) {}
-      }
-    };
-
-    const onPillUp = () => {
-      window.removeEventListener('mousemove', onPillMove);
-      window.removeEventListener('mouseup', onPillUp);
-      if (!hasMoved) {
-        toggleVisibility(true);
-      }
-    };
-
-    window.addEventListener('mousemove', onPillMove);
-    window.addEventListener('mouseup', onPillUp, { once: true });
-    e.preventDefault();
+  brandBtn?.addEventListener('mousedown', onMouseDownToolbar);
+  brandBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (dragDistance <= 4) {
+      toggleVisibility(false);
+    }
   });
 
-  // Toggle Visibility
+  collapsedPill.addEventListener('mousedown', onMouseDownPill);
+  collapsedPill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (dragDistance <= 4) {
+      toggleVisibility(true);
+    }
+  });
+
+  function syncPillPosition() {
+    if (currentPos.x !== null && currentPos.y !== null) {
+      const pillWidth = 110;
+      const pillHeight = 34;
+      const safeX = Math.max(8, Math.min(currentPos.x, window.innerWidth - pillWidth - 8));
+      const safeY = Math.max(8, Math.min(currentPos.y, window.innerHeight - pillHeight - 8));
+      collapsedPill.style.bottom = 'auto';
+      collapsedPill.style.right = 'auto';
+      collapsedPill.style.left = `${safeX}px`;
+      collapsedPill.style.top = `${safeY}px`;
+    } else {
+      collapsedPill.style.bottom = '24px';
+      collapsedPill.style.right = '24px';
+      collapsedPill.style.left = 'auto';
+      collapsedPill.style.top = 'auto';
+    }
+  }
+
   function toggleVisibility(force) {
+    mountHost();
     isVisible = typeof force === 'boolean' ? force : !isVisible;
     if (isVisible) {
       toolbar.style.display = 'inline-flex';
       collapsedPill.style.display = 'none';
-      showToast('Toolbar Visible (Alt+T to toggle)');
+      showToast('VisualPatch Expanded (Alt+T)');
     } else {
+      syncPillPosition();
       toolbar.style.display = 'none';
       collapsedPill.style.display = 'inline-flex';
-      showToast('Toolbar Collapsed (Alt+T to unhide)');
+      showToast('VisualPatch Collapsed (Click pill to expand)');
     }
   }
 
-  shadow.getElementById('visualpatch-btn-minimize').addEventListener('click', () => toggleVisibility(false));
+  shadow.getElementById('visualpatch-btn-minimize')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleVisibility(false);
+  });
 
-  // Helper: Get unique CSS selector
+  // CSS Selector Resolver
   function getCssSelector(el) {
     if (!(el instanceof Element)) return '';
     const path = [];
@@ -980,7 +1027,11 @@
           if (sibling.nodeName.toLowerCase() === selector) nth++;
         }
         if (el.className && typeof el.className === 'string') {
-          const classes = el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('vp-')).slice(0, 2);
+          const classes = el.className
+            .trim()
+            .split(/\s+/)
+            .filter((c) => c && !c.startsWith('vp-') && !c.startsWith('dev-annotator'))
+            .slice(0, 2);
           if (classes.length) selector += `.${classes.join('.')}`;
         }
         if (nth !== 1) selector += `:nth-of-type(${nth})`;
@@ -992,63 +1043,348 @@
     return path.join(' > ');
   }
 
-  // Helper: Resolve React/Vue Component Name & Source File (Zero-Token Precision Grounding)
-  function getComponentSourceInfo(el) {
+  // Framework Introspection Client (Stamped Token Protocol)
+  // Stamping occurs strictly on Pin Click to avoid layout thrashing during hover
+  async function resolveComponentSource(el) {
     if (!el || !(el instanceof Element)) return { component: null, sourceFile: null };
 
-    let component = null;
-    let sourceFile = null;
-
-    if (el.getAttribute('data-source-file')) sourceFile = el.getAttribute('data-source-file');
-    if (el.getAttribute('data-component')) component = el.getAttribute('data-component');
-
-    try {
-      const fiberKey = Object.keys(el).find(
-        (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')
-      );
-      if (fiberKey) {
-        let fiber = el[fiberKey];
-        while (fiber) {
-          if (fiber._debugSource && !sourceFile) {
-            const fn = fiber._debugSource.fileName || '';
-            const line = fiber._debugSource.lineNumber;
-            const cleanPath = fn.replace(/^.*[\\\/](src[\\\/].*)$/, '$1').replace(/\\/g, '/');
-            sourceFile = line ? `${cleanPath}#L${line}` : cleanPath;
-          }
-
-          if (typeof fiber.type === 'function' && !component) {
-            const name = fiber.type.displayName || fiber.type.name;
-            if (name && !['Anonymous', 'Fragment', 'Consumer', 'Provider', 'Context'].includes(name)) {
-              component = name;
-            }
-          } else if (typeof fiber.type === 'string' && !component && fiber._debugOwner) {
-            const ownerName = fiber._debugOwner.type?.displayName || fiber._debugOwner.type?.name;
-            if (ownerName) component = ownerName;
-          }
-
-          if (component && sourceFile) break;
-          fiber = fiber.return;
-        }
-      }
-    } catch (err) {}
-
-    if ((!component || !sourceFile) && el.parentElement && el.parentElement !== document.body) {
-      const parentInfo = getComponentSourceInfo(el.parentElement);
-      if (!component) component = parentInfo.component;
-      if (!sourceFile) sourceFile = parentInfo.sourceFile;
+    // 1. Direct Attributes Check
+    const directComp = el.getAttribute('data-component');
+    const directFile = el.getAttribute('data-source-file');
+    if (directComp || directFile) {
+      return { component: directComp || null, sourceFile: directFile || null };
     }
 
-    return { component, sourceFile };
+    // 2. Dispatch Stamped Token Protocol to Main World (bridge-main.js)
+    const token = `vp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    el.setAttribute('data-vp-token', token);
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          document.removeEventListener('visualpatch:res-meta', handler);
+          el.removeAttribute('data-vp-token');
+          resolve({ component: null, sourceFile: null });
+        }
+      }, 150);
+
+      function handler(e) {
+        if (e.detail && e.detail.token === token) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          document.removeEventListener('visualpatch:res-meta', handler);
+          el.removeAttribute('data-vp-token');
+          const meta = e.detail.meta || {};
+          resolve({
+            component: meta.component || null,
+            sourceFile: meta.sourceFile || null,
+            framework: meta.framework || null
+          });
+        }
+      }
+
+      document.addEventListener('visualpatch:res-meta', handler);
+      document.dispatchEvent(new CustomEvent('visualpatch:req-meta', { detail: { token } }));
+    });
   }
 
-  // Load Saved Annotations from Storage
+  // Native Chromium GPU Tab Capture & Physical DPR Canvas Cropper
+  // Clean Master Frame Buffer (CMFB) — In-Memory Clean Viewport Cache
+  let masterFrameBuffer = null; // { dataUrl, img, scrollX, scrollY, innerWidth, innerHeight, timestamp }
+
+  async function getOrCaptureCleanFrame() {
+    const now = Date.now();
+    const scrollX = window.scrollX || window.pageXOffset || 0;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+
+    // Use cached clean master buffer if un-scrolled and captured within 2500ms
+    if (
+      masterFrameBuffer &&
+      masterFrameBuffer.img &&
+      now - masterFrameBuffer.timestamp < 2500 &&
+      masterFrameBuffer.scrollX === scrollX &&
+      masterFrameBuffer.scrollY === scrollY &&
+      masterFrameBuffer.innerWidth === window.innerWidth &&
+      masterFrameBuffer.innerHeight === window.innerHeight
+    ) {
+      return masterFrameBuffer.img;
+    }
+
+    // 100% Ghost-Free Frame: Detach all open cards and hide all VisualPatch layers
+    cardsContainer.innerHTML = '';
+    host.style.visibility = 'hidden';
+    if (pinsContainer) pinsContainer.style.visibility = 'hidden';
+    if (highlighter) highlighter.style.visibility = 'hidden';
+    if (marqueeBox) marqueeBox.style.visibility = 'hidden';
+
+    // Wait 1 frame + macrotask for Blink style/layout and Viz compositor commit
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      // 1000ms Watchdog: UI will NEVER freeze or hang
+      const watchdog = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          host.style.visibility = 'visible';
+          if (pinsContainer) pinsContainer.style.visibility = 'visible';
+          if (highlighter) highlighter.style.visibility = 'visible';
+          if (marqueeBox) marqueeBox.style.visibility = 'visible';
+          resolve(null);
+        }
+      }, 1000);
+
+      chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(watchdog);
+
+        host.style.visibility = 'visible';
+        if (pinsContainer) pinsContainer.style.visibility = 'visible';
+        if (highlighter) highlighter.style.visibility = 'visible';
+        if (marqueeBox) marqueeBox.style.visibility = 'visible';
+
+        if (!response || !response.success || !response.dataUrl) {
+          return resolve(null);
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          masterFrameBuffer = {
+            dataUrl: response.dataUrl,
+            img: img,
+            scrollX,
+            scrollY,
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            timestamp: Date.now()
+          };
+          resolve(img);
+        };
+        img.onerror = () => resolve(null);
+        img.src = response.dataUrl;
+      });
+    });
+  }
+
+  // Crop element or box from clean frame buffer
+  async function cropFromCleanFrame(cropBox) {
+    if (!cropBox || typeof cropBox.width !== 'number' || cropBox.width <= 0) return null;
+
+    try {
+      const img = await getOrCaptureCleanFrame();
+      if (!img) return null;
+
+      const imgW = img.naturalWidth || img.width;
+      const imgH = img.naturalHeight || img.height;
+
+      // Scale factor between physical GPU pixels and CSS viewport pixels
+      const scaleX = imgW / window.innerWidth;
+      const scaleY = imgH / window.innerHeight;
+
+      const pad = Math.round(6 * scaleX);
+      const sx = Math.max(0, Math.floor(cropBox.x * scaleX) - pad);
+      const sy = Math.max(0, Math.floor(cropBox.y * scaleY) - pad);
+      const sw = Math.min(imgW - sx, Math.ceil(cropBox.width * scaleX) + pad * 2);
+      const sh = Math.min(imgH - sy, Math.ceil(cropBox.height * scaleY) + pad * 2);
+
+      if (sw <= 0 || sh <= 0) return null;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = sw;
+      canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Backwards-compatible alias for element and marquee crops
+  async function captureElementAutoSnap(targetElement, cropBox) {
+    return await cropFromCleanFrame(cropBox);
+  }
+
+  // Convert base64 data URL to pure image/png Blob for Clipboard API
+  function dataURLtoPngBlob(dataurl) {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth || img.width;
+          c.height = img.naturalHeight || img.height;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            c.toBlob((blob) => resolve(blob), 'image/png');
+          } else {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataurl;
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
+  // Stitch multiple pin screenshots into a single composite dark-mode image strip
+  async function createCompositeScreenshotBlob(items) {
+    const screenshotItems = items.filter(
+      (item) => item.screenshot && item.screenshot.startsWith('data:image/')
+    );
+    if (!screenshotItems.length) return null;
+
+    if (screenshotItems.length === 1) {
+      return await dataURLtoPngBlob(screenshotItems[0].screenshot);
+    }
+
+    const loadedImages = await Promise.all(
+      screenshotItems.map((item) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({
+            item,
+            img,
+            width: img.naturalWidth || img.width,
+            height: img.naturalHeight || img.height
+          });
+          img.onerror = () => resolve(null);
+          img.src = item.screenshot;
+        });
+      })
+    );
+
+    const valid = loadedImages.filter(Boolean);
+    if (!valid.length) return null;
+
+    const padding = 16;
+    const headerHeight = 32;
+    const itemGap = 16;
+    const MAX_ITEM_HEIGHT = 380;
+
+    const maxImgWidth = Math.max(...valid.map((v) => v.width), 480);
+    const canvasWidth = Math.min(maxImgWidth + padding * 2, 1200);
+
+    let totalHeight = padding;
+    valid.forEach((v) => {
+      const scale = Math.min(1, (canvasWidth - padding * 2) / v.width, MAX_ITEM_HEIGHT / v.height);
+      const scaledH = Math.round(v.height * scale);
+      totalHeight += headerHeight + 6 + scaledH + itemGap;
+    });
+    totalHeight += padding - itemGap;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasWidth;
+    // Hard ceiling at 8,192px to prevent exceeding Chromium Skia 16,384px texture limit
+    canvas.height = Math.min(totalHeight, 8192);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    // Background
+    ctx.fillStyle = '#0b0d11';
+    ctx.fillRect(0, 0, canvasWidth, canvas.height);
+
+    let currentY = padding;
+    valid.forEach((v, index) => {
+      if (currentY + headerHeight >= canvas.height) return;
+      const itemNum = v.item.number || index + 1;
+      const label = v.item.component ? `<${v.item.component}>` : (v.item.selector || 'Element');
+
+      // Header bar
+      ctx.fillStyle = '#161922';
+      ctx.fillRect(padding, currentY, canvasWidth - padding * 2, headerHeight);
+
+      // Badge
+      ctx.fillStyle = '#0071e3';
+      ctx.fillRect(padding + 6, currentY + 5, 58, headerHeight - 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText(`PIN #${itemNum}`, padding + 12, currentY + 20);
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+      const cleanLabel = label.length > 60 ? label.slice(0, 57) + '...' : label;
+      ctx.fillText(cleanLabel, padding + 72, currentY + 20);
+
+      currentY += headerHeight + 6;
+
+      // Scaled Image
+      const scale = Math.min(1, (canvasWidth - padding * 2) / v.width, MAX_ITEM_HEIGHT / v.height);
+      const drawW = Math.round(v.width * scale);
+      const drawH = Math.round(v.height * scale);
+      if (currentY + drawH <= canvas.height) {
+        ctx.drawImage(v.img, padding, currentY, drawW, drawH);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(padding, currentY, drawW, drawH);
+      }
+
+      currentY += drawH + itemGap;
+    });
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  }
+
+  // Write multi-mime ClipboardItem (image/png + text/plain)
+  async function copyToClipboardWithImage(md, items) {
+    let imageBlob = null;
+    try {
+      imageBlob = await createCompositeScreenshotBlob(items);
+    } catch (e) {}
+
+    let copiedImage = false;
+
+    if (imageBlob && navigator.clipboard && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([md], { type: 'text/plain' }),
+            'image/png': imageBlob
+          })
+        ]);
+        copiedImage = true;
+      } catch (clipErr) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'image/png': imageBlob
+            })
+          ]);
+          copiedImage = true;
+        } catch (e2) {}
+      }
+    }
+
+    if (!copiedImage) {
+      try {
+        await navigator.clipboard.writeText(md);
+      } catch (e) {}
+    }
+
+    return copiedImage;
+  }
+
+  // Storage Handlers
   function loadSaved() {
     const storageKey = `visualpatch_notes_${window.location.pathname}`;
     try {
       const data = localStorage.getItem(storageKey);
       if (data) {
         annotations = JSON.parse(data);
-        currentPinNumber = annotations.length ? Math.max(...annotations.map(a => a.number)) + 1 : 1;
+        currentPinNumber = annotations.length ? Math.max(...annotations.map((a) => a.number || 1)) + 1 : 1;
         renderPins();
         updateCount();
       }
@@ -1071,35 +1407,40 @@
     const agentBtn = shadow.getElementById('visualpatch-btn-send-agent');
 
     if (annotations.length > 0) {
-      countBadge.textContent = annotations.length;
-      countBadge.style.display = 'flex';
-      if (agentBadge) {
-        agentBadge.textContent = annotations.length;
-        agentBadge.style.display = 'flex';
-      }
-      pillBadge.textContent = annotations.length;
-      pillBadge.style.display = 'inline-flex';
-      copyBtn.classList.add('vp-btn-copy-has-pins');
+      if (countBadge) { countBadge.textContent = annotations.length; countBadge.style.display = 'flex'; }
+      if (agentBadge) { agentBadge.textContent = annotations.length; agentBadge.style.display = 'flex'; }
+      if (pillBadge) { pillBadge.textContent = annotations.length; pillBadge.style.display = 'inline-flex'; }
+      if (copyBtn) copyBtn.classList.add('vp-btn-copy-has-pins');
       if (agentBtn) agentBtn.classList.add('vp-btn-copy-has-pins');
     } else {
-      countBadge.style.display = 'none';
+      if (countBadge) countBadge.style.display = 'none';
       if (agentBadge) agentBadge.style.display = 'none';
-      pillBadge.style.display = 'none';
-      copyBtn.classList.remove('vp-btn-copy-has-pins');
+      if (pillBadge) pillBadge.style.display = 'none';
+      if (copyBtn) copyBtn.classList.remove('vp-btn-copy-has-pins');
       if (agentBtn) agentBtn.classList.remove('vp-btn-copy-has-pins');
     }
   }
 
-  // Render Pins in Document Layer
+  // Render Document Pin Markers
   function renderPins() {
+    if (!pinsContainer || !document.body?.contains(pinsContainer)) {
+      pinsContainer = document.getElementById('visualpatch-pins-layer');
+      if (!pinsContainer) {
+        pinsContainer = document.createElement('div');
+        pinsContainer.id = 'visualpatch-pins-layer';
+        pinsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 2147483640;';
+        document.body?.appendChild(pinsContainer);
+      }
+    }
+
     pinsContainer.innerHTML = '';
     annotations.forEach((item) => {
       const pin = document.createElement('div');
-      pin.className = item.screenshot ? 'vp-pin vp-pin-screenshot' : 'vp-pin';
+      pin.className = 'vp-pin';
       pin.textContent = item.number;
       pin.style.left = `${item.x}px`;
       pin.style.top = `${item.y}px`;
-      pin.title = `Pin #${item.number}${item.screenshot ? ' (📸 Screenshot Attached)' : ''}: ${item.note || 'Click to edit'}`;
+      pin.title = `Pin #${item.number}: ${item.note || 'Click to edit'}`;
 
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1110,88 +1451,7 @@
     });
   }
 
-  // Helper: Convert DataURL to Blob
-  function dataURLtoBlob(dataurl) {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
-  }
-
-  // Native GPU Tab Capture: 0ms DOM lag, captures directly from Chromium C++ GPU frame buffer
-  async function captureAreaNative(cropBox) {
-    const overlaysToHide = [
-      pinsContainer,
-      highlighter,
-      marqueeBackdrop,
-      document.getElementById('visualpatch-pins-layer')
-    ].filter(Boolean);
-
-    // Hide only pins and highlighters BEFORE triggering tab capture (KEEP feedback card visible!)
-    overlaysToHide.forEach((r) => (r.style.visibility = 'hidden'));
-
-    const restoreOverlays = () => {
-      overlaysToHide.forEach((r) => (r.style.visibility = 'visible'));
-    };
-
-    // Safety timer: restore visibility in at most 80ms
-    const timer = setTimeout(restoreOverlays, 80);
-
-    return new Promise((resolve) => {
-      try {
-        if (typeof chrome !== 'undefined' && chrome.runtime?.id && chrome.runtime?.sendMessage) {
-          chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
-            clearTimeout(timer);
-            restoreOverlays();
-
-            if (!response || !response.success || !response.dataUrl) {
-              resolve(null);
-              return;
-            }
-
-            const dpr = window.devicePixelRatio || 1;
-            const img = new Image();
-            img.onload = () => {
-              const imgW = img.naturalWidth || img.width;
-              const imgH = img.naturalHeight || img.height;
-              const scaleX = imgW / window.innerWidth;
-              const scaleY = imgH / window.innerHeight;
-
-              const sx = Math.max(0, Math.min(Math.round(cropBox.x * scaleX), imgW - 1));
-              const sy = Math.max(0, Math.min(Math.round(cropBox.y * scaleY), imgH - 1));
-              const sw = Math.max(1, Math.min(Math.round(cropBox.width * scaleX), imgW - sx));
-              const sh = Math.max(1, Math.min(Math.round(cropBox.height * scaleY), imgH - sy));
-
-              const cropCanvas = document.createElement('canvas');
-              cropCanvas.width = sw;
-              cropCanvas.height = sh;
-              const ctx = cropCanvas.getContext('2d');
-              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-
-              resolve(cropCanvas.toDataURL('image/png'));
-            };
-            img.onerror = () => resolve(null);
-            img.src = response.dataUrl;
-          });
-        } else {
-          clearTimeout(timer);
-          restoreOverlays();
-          resolve(null);
-        }
-      } catch (err) {
-        clearTimeout(timer);
-        restoreOverlays();
-        resolve(null);
-      }
-    });
-  }
-
-  // Open Linear-Style Note Card anchored naturally around the pin, constrained inside viewport
+  // Open Feedback Note Card
   function openNoteCard(item, pinEl) {
     cardsContainer.innerHTML = '';
 
@@ -1203,7 +1463,6 @@
     const estimatedHeight = item.screenshot ? 340 : 220;
     const margin = 12;
 
-    // 1. Horizontal: Place 14px to the right of pin; if it overflows right screen edge, flip to left of pin
     let targetX = clientX + 14;
     if (targetX + cardWidth > window.innerWidth - margin) {
       const leftX = clientX - cardWidth - 14;
@@ -1211,7 +1470,6 @@
     }
     const cardX = Math.max(margin, Math.min(targetX, window.innerWidth - cardWidth - margin));
 
-    // 2. Vertical: Align top of card with pin (clientY - 10), then gently clamp to stay fully in viewport
     let targetY = clientY - 10;
     const maxAllowedY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
     const cardY = Math.max(margin, Math.min(targetY, maxAllowedY));
@@ -1222,6 +1480,7 @@
     card.style.top = `${cardY}px`;
 
     const pinNumStr = item.number < 10 ? `0${item.number}` : item.number;
+    const compLabel = item.component ? `&lt;${item.component}&gt;` : `&lt;${item.tag}&gt;`;
 
     let thumbnailHtml = '';
     if (item.screenshot) {
@@ -1229,7 +1488,7 @@
         thumbnailHtml = `
           <div id="vp-thumb-placeholder" style="margin-bottom: 12px; height: 75px; border-radius: 10px; background: rgba(0, 113, 227, 0.08); border: 1px dashed rgba(0, 113, 227, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px; color: #38bdf8; font-size: 11.5px; font-weight: 600;">
             <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></span>
-            <span>Processing area snapshot...</span>
+            <span>Capturing GPU frame snapshot...</span>
           </div>
         `;
       } else {
@@ -1238,6 +1497,7 @@
             <img class="vp-thumbnail-img" id="vp-thumb-img" src="${item.screenshot}" alt="Captured Area" />
             <div class="vp-thumbnail-actions">
               <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
+              <button class="vp-pill-action-btn" id="vp-btn-copy-thumb">📋 Copy Img</button>
               <a class="vp-pill-action-btn" href="${item.screenshot}" download="visualpatch-pin-${item.number}.png" style="color: #38bdf8;">💾 PNG</a>
             </div>
           </div>
@@ -1252,61 +1512,51 @@
             <span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
             PIN ${pinNumStr}
           </span>
-          ${item.component ? `
-            <span style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); padding: 1px 6px; borderRadius: 4px; font-family: monospace;">
-              &lt;${item.component} /&gt;
-            </span>
-          ` : `
-            <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">&lt;${item.tag}&gt;</span>
-          `}
+          <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: monospace;">${compLabel}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="vp-pill-action-btn" id="vp-btn-resnap" title="Re-capture live component snapshot" style="font-size: 10.5px; padding: 2px 7px; height: 22px; display: inline-flex; align-items: center; gap: 4px;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+          <button class="vp-pill-action-btn" id="vp-btn-resnap" title="Re-capture snapshot" style="font-size: 10.5px; padding: 2px 7px; height: 22px; display: inline-flex; align-items: center; gap: 4px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
             </svg>
             <span>Re-snap</span>
           </button>
           <button class="vp-card-close" id="visualpatch-card-close-btn" title="Close (Esc)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
       </div>
 
-      <div class="vp-card-preview" style="font-size: 11px; font-family: monospace;">
-        ${item.sourceFile ? `<span style="color: #38bdf8; margin-right: 6px;">📄 ${item.sourceFile}</span>` : ''}
-        <span>${item.textSnippet ? `"${item.textSnippet}"` : item.selector}</span>
+      <div class="vp-card-preview">
+        <span>${item.sourceFile ? `📁 ${item.sourceFile}` : (item.textSnippet ? `"${item.textSnippet}"` : item.selector)}</span>
       </div>
 
       ${thumbnailHtml}
 
-      <textarea class="vp-textarea" id="visualpatch-note-input" placeholder="What change would you like here?... (Enter to save, Shift+Enter for new line)">${item.note || ''}</textarea>
+      <textarea class="vp-textarea" id="visualpatch-note-input" placeholder="Describe the change for AI agent... (Enter to save, Ctrl+Enter to send)">${item.note || ''}</textarea>
 
       <div class="vp-card-actions">
         <button class="vp-btn-delete" id="visualpatch-btn-del-pin" title="Delete this pin">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
           <span>Delete</span>
         </button>
 
         <div class="vp-segmented-capsule">
-          <button class="vp-btn-save-draft" id="visualpatch-btn-save-pin" title="Save draft locally (Enter)">
+          <button class="vp-btn-save-draft" id="visualpatch-btn-save-pin" title="Save draft (Enter)">
             <span>Save</span>
             <span style="font-size: 9.5px; opacity: 0.65; font-family: monospace;">↵</span>
           </button>
           <div class="vp-capsule-divider"></div>
-          <button class="vp-btn-agent-send" id="visualpatch-btn-card-send-agent" title="Transmit to Agent Inbox (Ctrl+Enter)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="flex-shrink: 0;">
+          <button class="vp-btn-agent-send" id="visualpatch-btn-card-send-agent" title="Transmit to Agent (Ctrl+Enter)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
             <span>Send to Agent</span>
-            <span style="font-size: 8.5px; opacity: 0.85; font-family: monospace; background: rgba(0, 0, 0, 0.25); padding: 1px 3.5px; border-radius: 3px; letter-spacing: 0.02em; flex-shrink: 0;">Ctrl+↵</span>
+            <span style="font-size: 8.5px; opacity: 0.85; font-family: monospace; background: rgba(0, 0, 0, 0.25); padding: 1px 3.5px; border-radius: 3px;">Ctrl+↵</span>
           </button>
         </div>
       </div>
@@ -1315,57 +1565,45 @@
     cardsContainer.appendChild(card);
 
     if (item.screenshot && item.screenshot !== 'pending') {
-      card.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(item.screenshot));
-      card.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(item.screenshot));
+      card.querySelector('#vp-btn-zoom')?.addEventListener('click', () => openLightbox(item.screenshot));
+      card.querySelector('#vp-thumb-img')?.addEventListener('click', () => openLightbox(item.screenshot));
+      card.querySelector('#vp-btn-copy-thumb')?.addEventListener('click', async () => {
+        const blob = await dataURLtoPngBlob(item.screenshot);
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            showToast(`📸 Pin #${item.number} screenshot copied!`);
+            return;
+          } catch (e) {}
+        }
+        showToast('Could not copy image');
+      });
     }
 
+    // Re-snap Action
     card.querySelector('#vp-btn-resnap')?.addEventListener('click', async () => {
-      showToast('Re-capturing component snapshot...');
+      showToast('Re-capturing GPU frame...');
       const targetEl = item.selector ? document.querySelector(item.selector) : null;
-      let box = item.cropBox;
-      if (targetEl) {
-        const r = targetEl.getBoundingClientRect();
-        const pad = 8;
-        const cx = Math.max(0, r.left - pad);
-        const cy = Math.max(0, r.top - pad);
-        box = {
-          x: cx,
-          y: cy,
-          width: Math.min(window.innerWidth - cx, r.width + pad * 2),
-          height: Math.min(window.innerHeight - cy, r.height + pad * 2)
-        };
-      }
-      if (!box) {
-        const scrollX = window.scrollX || 0;
-        const scrollY = window.scrollY || 0;
-        box = {
-          x: Math.max(0, item.x - scrollX - 50),
-          y: Math.max(0, item.y - scrollY - 30),
-          width: 100,
-          height: 60
-        };
-      }
       item.screenshot = 'pending';
-      item.cropBox = box;
       openNoteCard(item, pinEl);
-      const snap = await captureAreaNative(box);
-      if (snap) {
-        item.screenshot = snap;
-        saveStorage();
-        renderPins();
-        openNoteCard(item, pinEl);
-        showToast('📸 Component snapshot updated');
-      }
+      const snap = await captureElementAutoSnap(targetEl, item.cropBox);
+      item.screenshot = snap || null;
+      saveStorage();
+      renderPins();
+      openNoteCard(item, pinEl);
+      if (snap) showToast('📸 Snapshot updated');
     });
 
     const input = card.querySelector('#visualpatch-note-input');
     setTimeout(() => {
-      input.focus();
-      input.select();
+      if (input) {
+        input.focus();
+        input.select();
+      }
     }, 40);
 
     const saveNote = () => {
-      item.note = input.value.trim();
+      if (input) item.note = input.value.trim();
       saveStorage();
       renderPins();
       cardsContainer.innerHTML = '';
@@ -1373,59 +1611,69 @@
     };
 
     const deleteNote = () => {
-      annotations = annotations.filter(a => a.id !== item.id);
+      annotations = annotations.filter((a) => a.id !== item.id);
       saveStorage();
       renderPins();
       cardsContainer.innerHTML = '';
       showToast(`Deleted Pin #${item.number}`);
     };
 
-    card.querySelector('#visualpatch-card-close-btn').addEventListener('click', () => cardsContainer.innerHTML = '');
-    card.querySelector('#visualpatch-btn-cancel-pin').addEventListener('click', () => cardsContainer.innerHTML = '');
-    card.querySelector('#visualpatch-btn-save-pin').addEventListener('click', saveNote);
-    card.querySelector('#visualpatch-btn-del-pin').addEventListener('click', deleteNote);
-    card.querySelector('#visualpatch-btn-card-send-agent').addEventListener('click', () => {
-      item.note = input.value.trim();
+    card.querySelector('#visualpatch-card-close-btn')?.addEventListener('click', () => cardsContainer.innerHTML = '');
+    card.querySelector('#visualpatch-btn-save-pin')?.addEventListener('click', saveNote);
+    card.querySelector('#visualpatch-btn-del-pin')?.addEventListener('click', deleteNote);
+    card.querySelector('#visualpatch-btn-card-send-agent')?.addEventListener('click', () => {
+      if (input) item.note = input.value.trim();
       saveStorage();
       sendToAgent();
     });
 
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        saveNote();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cardsContainer.innerHTML = '';
-      }
-    });
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          saveNote();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          if (input) item.note = input.value.trim();
+          saveStorage();
+          sendToAgent();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cardsContainer.innerHTML = '';
+        }
+      });
+    }
   }
 
-  // Toggle Inspect Mode
   function toggleInspect(force) {
+    mountHost();
     isInspectMode = typeof force === 'boolean' ? force : !isInspectMode;
     const btn = shadow.getElementById('visualpatch-btn-inspect');
     if (isInspectMode) {
       toggleScreenshot(false);
       btn.classList.add('vp-btn-active');
       document.body.style.cursor = 'crosshair';
-      showToast('Inspect Mode Active · Click element to pin (Esc to exit)');
+      if (highlighter) {
+        highlighter.style.visibility = 'visible';
+      }
+      showToast('Inspect Mode Active (D / Alt+D) · Click element to pin');
     } else {
       btn.classList.remove('vp-btn-active');
       highlighter.style.display = 'none';
       document.body.style.cursor = 'default';
+      hoveredElement = null;
     }
   }
 
-  // Toggle Screenshot Marquee Mode (Option 2)
   function toggleScreenshot(force) {
+    mountHost();
     isScreenshotMode = typeof force === 'boolean' ? force : !isScreenshotMode;
     const btn = shadow.getElementById('visualpatch-btn-screenshot');
     if (isScreenshotMode) {
       toggleInspect(false);
       btn.classList.add('vp-btn-active');
       marqueeBackdrop.style.display = 'block';
-      showToast('Area Screenshot Mode · Hold Right or Left mouse button to drag (Esc to cancel)');
+      showToast('Screenshot Mode (S / Alt+S) · Drag marquee box');
     } else {
       btn.classList.remove('vp-btn-active');
       marqueeBackdrop.style.display = 'none';
@@ -1433,15 +1681,13 @@
     }
   }
 
-  // Marquee Drag Events (Right-Click or Left-Click Hold)
+  // Marquee Area Drag
   marqueeBackdrop.addEventListener('contextmenu', (e) => e.preventDefault());
-
   marqueeBackdrop.addEventListener('mousedown', (e) => {
     if (e.button !== 0 && e.button !== 2) return;
     isMarqueeDragging = true;
     marqueeStartX = e.clientX;
     marqueeStartY = e.clientY;
-
     marqueeBox.style.left = `${e.clientX}px`;
     marqueeBox.style.top = `${e.clientY}px`;
     marqueeBox.style.width = '0px';
@@ -1452,10 +1698,8 @@
 
   window.addEventListener('mousemove', (e) => {
     if (!isMarqueeDragging || !isScreenshotMode) return;
-
     const currentX = e.clientX;
     const currentY = e.clientY;
-
     const x = Math.min(marqueeStartX, currentX);
     const y = Math.min(marqueeStartY, currentY);
     const w = Math.abs(currentX - marqueeStartX);
@@ -1465,18 +1709,15 @@
     marqueeBox.style.top = `${y}px`;
     marqueeBox.style.width = `${w}px`;
     marqueeBox.style.height = `${h}px`;
-
-    marqueeDim.style.bottom = (y + h + 38 > window.innerHeight) ? '10px' : '-34px';
-    marqueeDim.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span><span>${Math.round(w)} × ${Math.round(h)}</span><span style="font-size: 9px; opacity: 0.6; letter-spacing: 0.04em;">PX</span>`;
+    marqueeDim.style.bottom = y + h + 38 > window.innerHeight ? '10px' : '-34px';
+    marqueeDim.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;"></span><span>${Math.round(w)} × ${Math.round(h)}</span>`;
   });
 
   window.addEventListener('mouseup', async (e) => {
     if (!isMarqueeDragging || !isScreenshotMode) return;
     isMarqueeDragging = false;
-
     const currentX = e.clientX;
     const currentY = e.clientY;
-
     const x = Math.min(marqueeStartX, currentX);
     const y = Math.min(marqueeStartY, currentY);
     const w = Math.abs(currentX - marqueeStartX);
@@ -1490,36 +1731,27 @@
     const cropRect = { x, y, width: w, height: h };
     toggleScreenshot(false);
 
-    // Detect underlying element (filtering out VisualPatch overlays)
     const centerX = x + w / 2;
     const centerY = y + h / 2;
     const elementsAtPoint = document.elementsFromPoint ? document.elementsFromPoint(centerX, centerY) : [];
     const el = elementsAtPoint.find((node) => {
       if (!node || node === document.body || node === document.documentElement) return false;
-      if (
-        node.id === 'vp-marquee-backdrop' ||
-        node.id === 'visualpatch-host' ||
-        node.id === 'visualpatch-pins-layer' ||
-        node.id === 'dev-annotator-fixed-root' ||
-        node.closest?.('#visualpatch-host') ||
-        node.closest?.('#visualpatch-pins-layer') ||
-        node.closest?.('#dev-annotator-fixed-root') ||
-        node.closest?.('#dev-annotator-pins-root')
-      ) return false;
+      if (node.id === 'vp-marquee-backdrop' || node.id === 'visualpatch-host' || node.id === 'visualpatch-pins-layer') return false;
       return true;
     }) || document.body;
+
     const selector = getCssSelector(el);
-    const sourceInfo = getComponentSourceInfo(el);
+    const sourceInfo = await resolveComponentSource(el);
     const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
-    const pinX = Math.round(x + scrollX + 16);
-    const pinY = Math.round(y + scrollY + 16);
 
-    const newId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    // Direct GPU Framebuffer Crop for Marquee Box FIRST
+    const snap = await cropFromCleanFrame(cropRect);
+
     const newAnnotation = {
-      id: newId,
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
       number: currentPinNumber++,
       tag: el.tagName ? el.tagName.toLowerCase() : 'area',
       selector: selector || `area[${w}x${h}]`,
@@ -1527,246 +1759,23 @@
       sourceFile: sourceInfo.sourceFile,
       textSnippet: textSnippet,
       note: '',
-      x: pinX,
-      y: pinY,
-      screenshot: 'pending',
+      x: Math.round(x + scrollX + 16),
+      y: Math.round(y + scrollY + 16),
+      screenshot: snap || null,
       cropBox: cropRect,
       timestamp: new Date().toISOString()
     };
 
-    // 1. Kick off pre-flight snapshot at t=0ms
-    const snapPromise = captureAreaNative(cropRect);
-
-    // 2. Register annotation and render pin immediately at 0ms (Zero mouse release lag!)
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
-    // 3. Open note card instantly at 0ms ready for immediate typing
     const pins = pinsContainer.querySelectorAll('.vp-pin');
     const lastPin = pins[pins.length - 1];
     if (lastPin) openNoteCard(newAnnotation, lastPin);
-
-    showToast(`📸 Area pinned (#${newAnnotation.number})`);
-
-    // 4. Hydrate snapshot seamlessly when pre-flight capture resolves
-    snapPromise.then((snap) => {
-      if (snap) {
-        newAnnotation.screenshot = snap;
-        saveStorage();
-        renderPins();
-
-        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (thumbPlaceholder) {
-          const thumbDiv = document.createElement('div');
-          thumbDiv.className = 'vp-thumbnail-box';
-          thumbDiv.style.cssText = 'margin-bottom: 8px; border-radius: 8px; flex-shrink: 0;';
-          thumbDiv.innerHTML = `
-            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" style="max-height: 90px; object-fit: contain;" />
-            <div class="vp-thumbnail-actions">
-              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
-              <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
-            </div>
-          `;
-          thumbPlaceholder.replaceWith(thumbDiv);
-          thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
-          thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
-        }
-      } else {
-        newAnnotation.screenshot = null;
-        saveStorage();
-        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (thumbPlaceholder) thumbPlaceholder.remove();
-      }
-    }).catch(() => {
-      newAnnotation.screenshot = null;
-      saveStorage();
-      const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-      if (thumbPlaceholder) thumbPlaceholder.remove();
-    });
   });
 
-  // Helper: Create a single auto-stitched composite image strip for multiple screenshots
-  // Helper: Convert any data URL to pure image/png Blob for Clipboard API
-  function dataURLtoPngBlob(dataurl) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth || img.width;
-        c.height = img.naturalHeight || img.height;
-        const ctx = c.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          c.toBlob((blob) => resolve(blob), 'image/png');
-        } else {
-          resolve(null);
-        }
-      };
-      img.onerror = () => resolve(null);
-      img.src = dataurl;
-    });
-  }
-
-  // Helper: Create a single auto-stitched composite image strip for multiple screenshots
-  async function createCompositeScreenshotBlob(items) {
-    const screenshotItems = items.filter(
-      (item) => item.screenshot && item.screenshot.startsWith('data:image/')
-    );
-    if (!screenshotItems.length) return null;
-
-    if (screenshotItems.length === 1) {
-      try {
-        const singlePng = await dataURLtoPngBlob(screenshotItems[0].screenshot);
-        if (singlePng) return singlePng;
-      } catch (e) {}
-    }
-
-    const loadedImages = await Promise.all(
-      screenshotItems.map((item) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => resolve({ item, img, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
-          img.onerror = () => resolve(null);
-          img.src = item.screenshot;
-        });
-      })
-    );
-
-    const valid = loadedImages.filter(Boolean);
-    if (!valid.length) return null;
-
-    const padding = 20;
-    const headerHeight = 34;
-    const itemGap = 20;
-
-    const maxImgWidth = Math.max(...valid.map((v) => v.width), 480);
-    const canvasWidth = maxImgWidth + padding * 2;
-
-    let totalHeight = padding;
-    valid.forEach((v) => {
-      totalHeight += headerHeight + 8 + v.height + itemGap;
-    });
-    totalHeight += padding - itemGap;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasWidth;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    // Background
-    ctx.fillStyle = '#0f1115';
-    ctx.fillRect(0, 0, canvasWidth, totalHeight);
-
-    let currentY = padding;
-    valid.forEach((v, index) => {
-      const itemNum = v.item.number || index + 1;
-      const selector = v.item.selector || 'Element';
-
-      // Header Bar Background
-      ctx.fillStyle = '#171922';
-      ctx.beginPath();
-      if (ctx.roundRect) {
-        ctx.roundRect(padding, currentY, canvasWidth - padding * 2, headerHeight, 6);
-      } else {
-        ctx.rect(padding, currentY, canvasWidth - padding * 2, headerHeight);
-      }
-      ctx.fill();
-
-      // Badge Pill (#1 / #2)
-      ctx.fillStyle = '#0071e3';
-      ctx.beginPath();
-      if (ctx.roundRect) {
-        ctx.roundRect(padding + 8, currentY + 6, 64, headerHeight - 12, 4);
-      } else {
-        ctx.rect(padding + 8, currentY + 6, 64, headerHeight - 12);
-      }
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(`PIN #${itemNum}`, padding + 15, currentY + 21);
-
-      // Selector Monospace
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
-      const cleanSelector = selector.length > 55 ? selector.slice(0, 52) + '...' : selector;
-      ctx.fillText(cleanSelector, padding + 82, currentY + 21);
-
-      currentY += headerHeight + 8;
-
-      // Draw Screenshot Image
-      ctx.drawImage(v.img, padding, currentY, v.width, v.height);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(padding, currentY, v.width, v.height);
-
-      currentY += v.height + itemGap;
-    });
-
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), 'image/png');
-    });
-  }
-
-  // Copy Formatted Markdown to Clipboard & auto-clear to avoid duplication
-  async function copyForAI() {
-    if (!annotations.length) {
-      showToast('No annotations yet · Drop pins first');
-      return;
-    }
-
-    const count = annotations.length;
-    let payload = `### 📌 VisualPatch Feedback from Localhost Preview\n`;
-    payload += `**URL:** \`${window.location.href}\`\n`;
-    payload += `**Total Items:** ${count}\n\n`;
-
-    annotations.forEach((item, index) => {
-      payload += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
-      if (item.textSnippet) payload += `- **Current Content:** "${item.textSnippet}"\n`;
-      payload += `- **Requested Change:** ${item.note || 'No specific note added'}\n\n`;
-    });
-
-    try {
-      const compositeBlob = await createCompositeScreenshotBlob(annotations);
-      if (compositeBlob && navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/plain': new Blob([payload], { type: 'text/plain' }),
-            'image/png': compositeBlob
-          })
-        ]);
-        annotations = [];
-        currentPinNumber = 1;
-        saveStorage();
-        renderPins();
-        cardsContainer.innerHTML = '';
-        showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''} (+ screenshot strip)!`);
-        return;
-      }
-    } catch (e) {}
-
-    navigator.clipboard.writeText(payload).then(() => {
-      annotations = [];
-      currentPinNumber = 1;
-      saveStorage();
-      renderPins();
-      cardsContainer.innerHTML = '';
-      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
-    }).catch(() => {
-      annotations = [];
-      currentPinNumber = 1;
-      saveStorage();
-      renderPins();
-      cardsContainer.innerHTML = '';
-      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
-    });
-  }
-
-  // Direct 0-Token AI Agent Bridge (Saves images to disk & populates agent inbox)
+  // Dual Transport AI Agent Bridge (Transmits to backend + copies to clipboard + clears pins)
   async function sendToAgent() {
     const input = shadow.querySelector('#visualpatch-note-input');
     if (input && annotations.length) {
@@ -1777,12 +1786,18 @@
     }
 
     if (!annotations.length) {
-      showToast('No annotations yet · Drop pins or capture areas first');
+      showToast('No annotations yet · Drop pins first');
       return;
     }
 
     const count = annotations.length;
     showToast(`⚡ Transmitting ${count} item${count > 1 ? 's' : ''} to Agent...`);
+
+    // In-Flight Capture Drain Barrier (SME 2 Audit)
+    const pendingItems = annotations.filter((a) => a.screenshot === 'pending');
+    if (pendingItems.length > 0) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
 
     const payload = {
       url: window.location.href,
@@ -1801,71 +1816,118 @@
 
     let sent = false;
 
-    // 1. Try sending to Local Loopback Agent Bridge (127.0.0.1:44922)
+    // 1. Try local dev-server middleware endpoint (Vite / Next.js)
     try {
-      const bridgeRes = await fetch('http://127.0.0.1:44922/api/inbox', {
+      const localRes = await fetch('/__visualpatch_inbox', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (bridgeRes.ok) sent = true;
+      if (localRes.ok) sent = true;
     } catch (e) {}
 
-    // 2. Try sending to Dev Server Middleware
+    // 2. Try CLI Loopback Bridge (127.0.0.1:44922)
     if (!sent) {
       try {
-        const devRes = await fetch('/__visualpatch_inbox', {
+        const bridgeRes = await fetch('http://127.0.0.1:44922/api/inbox', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (devRes.ok) sent = true;
+        if (bridgeRes.ok) sent = true;
       } catch (e) {}
     }
 
-    // 3. Fallback: Copy clean Markdown + screenshot strip to clipboard
+    // 3. Generate Clean, Token-Efficient Markdown
     let md = `### 📌 VisualPatch UI Task Queue\n`;
     md += `**Source URL:** \`${window.location.href}\`\n`;
     md += `**Total Items:** ${count}\n\n`;
 
     annotations.forEach((item, index) => {
-      md += `#### ${index + 1}. Element: \`${item.selector}\`${item.screenshot ? ' 📸 [Area Screenshot Attached]' : ''}\n`;
-      if (item.component) md += `- **React Component:** \`<${item.component}>\`\n`;
+      const hasSnap = item.screenshot && item.screenshot.startsWith('data:image/');
+      md += `#### ${index + 1}. Element: \`${item.selector}\`${hasSnap ? ' 📸 [Snapshot Attached]' : ''}\n`;
+      if (item.component) md += `- **Component:** \`<${item.component}>\`\n`;
       if (item.sourceFile) md += `- **Source File:** \`${item.sourceFile}\`\n`;
       if (item.textSnippet) md += `- **Rendered Text:** "${item.textSnippet}"\n`;
-      md += `- **Requested Change:** ${item.note || 'Inspect and refine component styling/layout.'}\n\n`;
+      md += `- **Requested Change:** ${item.note || 'Inspect and refine component styling.'}\n\n`;
     });
 
-    try {
-      const compositeBlob = await createCompositeScreenshotBlob(annotations);
-      if (compositeBlob && navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/plain': new Blob([md], { type: 'text/plain' }),
-            'image/png': compositeBlob
-          })
-        ]);
-      } else {
-        await navigator.clipboard.writeText(md);
-      }
-    } catch (e) {
-      try { await navigator.clipboard.writeText(md); } catch (err) {}
-    }
+    // 4. Always write clean Markdown + Image to System Clipboard
+    const copiedImage = await copyToClipboardWithImage(md, annotations);
 
+    // Clear annotations only after sending
     annotations = [];
     currentPinNumber = 1;
+    masterFrameBuffer = null;
     saveStorage();
     renderPins();
     cardsContainer.innerHTML = '';
+    updateCount();
 
     if (sent) {
-      showToast(`⚡ Ingested into .visualpatch/inbox.md! Check agent.`);
+      showToast(`⚡ Saved to .visualpatch/inbox.md & cleared!`);
+    } else if (copiedImage) {
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
     } else {
-      showToast(`📋 Copied for AI (+ saved to clipboard)`);
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}!`);
     }
   }
 
-  // DOM Event Listeners for Inspection & Pin Drop
+  // Copy Feedback + Images for AI & IMMEDIATELY DELETE PINS (Copy + Delete)
+  async function copyForAI() {
+    const input = shadow.querySelector('#visualpatch-note-input');
+    if (input && annotations.length) {
+      const last = annotations[annotations.length - 1];
+      if (last && !last.note) last.note = input.value.trim();
+      saveStorage();
+    }
+
+    if (!annotations.length) {
+      showToast('No annotations yet · Drop pins first');
+      return;
+    }
+
+    const count = annotations.length;
+    showToast(`📋 Copying ${count} item${count > 1 ? 's' : ''} to clipboard...`);
+
+    // In-Flight Capture Drain Barrier (SME 2 Audit)
+    const pendingItems = annotations.filter((a) => a.screenshot === 'pending');
+    if (pendingItems.length > 0) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
+    let md = `### 📌 VisualPatch UI Task Queue\n`;
+    md += `**Source URL:** \`${window.location.href}\`\n`;
+    md += `**Total Items:** ${count}\n\n`;
+
+    annotations.forEach((item, index) => {
+      const hasSnap = item.screenshot && item.screenshot.startsWith('data:image/');
+      md += `#### ${index + 1}. Element: \`${item.selector}\`${hasSnap ? ' 📸 [Snapshot Attached]' : ''}\n`;
+      if (item.component) md += `- **Component:** \`<${item.component}>\`\n`;
+      if (item.sourceFile) md += `- **Source File:** \`${item.sourceFile}\`\n`;
+      if (item.textSnippet) md += `- **Rendered Text:** "${item.textSnippet}"\n`;
+      md += `- **Requested Change:** ${item.note || 'Inspect and refine component styling.'}\n\n`;
+    });
+
+    const copiedImage = await copyToClipboardWithImage(md, annotations);
+
+    // COPY + DELETE: Immediately purge all annotations from memory & disk
+    annotations = [];
+    currentPinNumber = 1;
+    masterFrameBuffer = null;
+    saveStorage();
+    renderPins();
+    cardsContainer.innerHTML = '';
+    updateCount();
+
+    if (copiedImage) {
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
+    } else {
+      showToast(`📋 Copied & cleared ${count} item${count > 1 ? 's' : ''}! Paste into AI chat.`);
+    }
+  }
+
+  // Hover Outline (Bifurcated: DOM Tag & Dim inspection only, NO token stamping)
   document.addEventListener('mousemove', (e) => {
     if (!isInspectMode || isScreenshotMode) return;
     if (e.target.closest('#visualpatch-host') || e.target.closest('#visualpatch-pins-layer')) return;
@@ -1879,26 +1941,31 @@
     hoveredElement = el;
 
     const rect = el.getBoundingClientRect();
-    if (rect.width >= window.innerWidth * 0.96 && rect.height >= window.innerHeight * 0.96) {
+    if (rect.width >= window.innerWidth * 0.98 && rect.height >= window.innerHeight * 0.98) {
       highlighter.style.display = 'none';
       return;
     }
 
+    highlighter.style.visibility = 'visible';
     highlighter.style.display = 'block';
     highlighter.style.left = `${rect.left}px`;
     highlighter.style.top = `${rect.top}px`;
     highlighter.style.width = `${rect.width}px`;
     highlighter.style.height = `${rect.height}px`;
-
     tagBadge.textContent = `${el.tagName.toLowerCase()} [${Math.round(rect.width)}×${Math.round(rect.height)}]`;
   }, true);
 
+  // Click to Drop Pin (Executes Stamped Token Protocol + GPU Snap)
   document.addEventListener('click', async (e) => {
     if (!isInspectMode || isScreenshotMode) return;
     if (e.target.closest('#visualpatch-host') || e.target.closest('#visualpatch-pins-layer')) return;
 
     e.preventDefault();
     e.stopPropagation();
+
+    // Immediately hide hover outline so it does not linger or bleed
+    highlighter.style.display = 'none';
+    hoveredElement = null;
 
     const el = e.target;
     if (!el || el === document.body || el === document.documentElement || el.id === 'root') return;
@@ -1910,233 +1977,229 @@
     const pinY = Math.round(e.pageY || rect.top + scrollY + 10);
 
     const selector = getCssSelector(el);
-    const sourceInfo = getComponentSourceInfo(el);
     const textSnippet = el.textContent ? el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80) : '';
 
-    // Compute exact component bounding box with 8px context padding
-    const pad = 8;
-    const cropX = Math.max(0, rect.left - pad);
-    const cropY = Math.max(0, rect.top - pad);
-    const cropW = Math.min(window.innerWidth - cropX, rect.width + pad * 2);
-    const cropH = Math.min(window.innerHeight - cropY, rect.height + pad * 2);
-    const cropBox = { x: cropX, y: cropY, width: Math.max(16, cropW), height: Math.max(16, cropH) };
+    const cropBox = {
+      x: Math.max(0, rect.left),
+      y: Math.max(0, rect.top),
+      width: Math.max(16, rect.width),
+      height: Math.max(16, rect.height)
+    };
+
+    // 1. Capture clean snapshot FIRST (guarantees cardsContainer.innerHTML = '' cleans old cards and NEVER wipes this card!)
+    const snap = await cropFromCleanFrame(cropBox);
 
     const newAnnotation = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
       number: currentPinNumber++,
       tag: el.tagName.toLowerCase(),
       selector: selector,
-      component: sourceInfo.component,
-      sourceFile: sourceInfo.sourceFile,
+      component: null,
+      sourceFile: null,
       textSnippet: textSnippet,
       note: '',
       x: pinX,
       y: pinY,
-      screenshot: 'pending',
+      screenshot: snap || null,
       cropBox: cropBox,
       timestamp: new Date().toISOString()
     };
 
-    // 1. Kick off pre-flight snapshot at t=0ms BEFORE note card is mounted to DOM
-    const snapPromise = captureAreaNative(cropBox);
-
-    // 2. Register annotation and render pin
     annotations.push(newAnnotation);
     saveStorage();
     renderPins();
 
-    // 3. Instantly open note card at 0ms with focus ready for immediate typing
+    // 2. Open Note Card IMMEDIATELY on the 1st click with snapshot already attached
     const pins = pinsContainer.querySelectorAll('.vp-pin');
     const targetPinEl = pins[pins.length - 1];
     if (targetPinEl) openNoteCard(newAnnotation, targetPinEl);
 
-    // 4. Mount snapshot seamlessly when pre-flight capture resolves
-    snapPromise.then((snap) => {
-      if (snap) {
-        newAnnotation.screenshot = snap;
-        saveStorage();
-        renderPins();
-
-        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (thumbPlaceholder) {
-          const thumbDiv = document.createElement('div');
-          thumbDiv.className = 'vp-thumbnail-box';
-          thumbDiv.innerHTML = `
-            <img class="vp-thumbnail-img" id="vp-thumb-img" src="${snap}" alt="Captured Area" />
-            <div class="vp-thumbnail-actions">
-              <button class="vp-pill-action-btn" id="vp-btn-zoom">🔍 Zoom</button>
-              <a class="vp-pill-action-btn" href="${snap}" download="visualpatch-pin-${newAnnotation.number}.png" style="color: #38bdf8;">💾 PNG</a>
-            </div>
-          `;
-          thumbPlaceholder.replaceWith(thumbDiv);
-          thumbDiv.querySelector('#vp-btn-zoom').addEventListener('click', () => openLightbox(snap));
-          thumbDiv.querySelector('#vp-thumb-img').addEventListener('click', () => openLightbox(snap));
-        }
-      } else {
-        newAnnotation.screenshot = null;
-        saveStorage();
-        const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-        if (thumbPlaceholder) thumbPlaceholder.remove();
-      }
-    }).catch(() => {
-      newAnnotation.screenshot = null;
+    // 3. Resolve framework metadata asynchronously in background
+    resolveComponentSource(el).then((info) => {
+      if (!annotations.some((a) => a.id === newAnnotation.id)) return;
+      newAnnotation.component = info.component || null;
+      newAnnotation.sourceFile = info.sourceFile || null;
       saveStorage();
-      const thumbPlaceholder = cardsContainer.querySelector('#vp-thumb-placeholder');
-      if (thumbPlaceholder) thumbPlaceholder.remove();
+      if (cardsContainer.querySelector('.vp-card')) {
+        const preview = cardsContainer.querySelector('.vp-card-preview');
+        if (preview && info.sourceFile) {
+          preview.innerHTML = `<span>📁 ${info.sourceFile}</span>`;
+        }
+      }
     });
   }, true);
 
-  // Global Keyboard Shortcuts (Capture Phase)
+  // Global Keydown Handler (Refined: Single key 'S', 'A', 'D', 'Esc' enter/exit, full typing shield)
   window.addEventListener('keydown', (e) => {
-    const isEsc = e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape' || e.keyCode === 27;
+    const isEsc = e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27;
 
-    // Instant Escape Handling
     if (isEsc) {
-      e.preventDefault();
-      e.stopPropagation();
-
       if (lightboxModal.style.display === 'flex') {
+        e.preventDefault();
         lightboxModal.style.display = 'none';
         return;
       }
-
       if (isScreenshotMode) {
+        e.preventDefault();
         toggleScreenshot(false);
         showToast('Screenshot mode cancelled');
         return;
       }
-
       const card = shadow.querySelector('.vp-card');
       if (card) {
+        e.preventDefault();
         cardsContainer.innerHTML = '';
         return;
       }
+      if (isInspectMode) {
+        e.preventDefault();
+        toggleInspect(false);
+        return;
+      }
 
-      toggleInspect();
+      // If user is currently typing in an external web input, let Esc blur it
+      const activeEl = shadow.activeElement || document.activeElement;
+      const isTyping =
+        activeEl &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
+          activeEl.isContentEditable ||
+          activeEl.getAttribute('contenteditable') === 'true' ||
+          activeEl.getAttribute('role') === 'textbox' ||
+          activeEl.closest?.('.monaco-editor') ||
+          activeEl.closest?.('.ace_editor') ||
+          activeEl.closest?.('.cm-editor'));
+      if (isTyping) return;
+
+      // Esc ENTERS inspect mode when idle!
+      e.preventDefault();
+      toggleInspect(true);
       return;
     }
 
-    // Ctrl + Enter / Cmd + Enter: Instant Send to Agent (Even while typing in note card!)
-    const isEnterKey = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13;
-    if (isEnterKey && (e.ctrlKey || e.metaKey)) {
+    // Ctrl + Enter to Send
+    const isEnter = e.key === 'Enter' || e.code === 'Enter';
+    if (isEnter && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       e.stopPropagation();
       sendToAgent();
       return;
     }
 
+    // Strict Typing Shield
     const activeEl = shadow.activeElement || document.activeElement;
-    const isTyping = activeEl && (
-      ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
-      activeEl.isContentEditable ||
-      activeEl.getAttribute('contenteditable') === 'true' ||
-      activeEl.getAttribute('role') === 'textbox'
-    );
-
-    // Ctrl + C / Cmd + C / Alt + C shortcut to copy feedback
-    const isCopyKey = (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') && (e.ctrlKey || e.metaKey || e.altKey);
-    if (isCopyKey) {
-      const hasSelection = window.getSelection() && window.getSelection().toString().trim().length > 0;
-      if (!hasSelection && !isTyping) {
-        e.preventDefault();
-        copyForAI();
-        return;
-      }
-    }
+    const isTyping =
+      activeEl &&
+      (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable ||
+        activeEl.getAttribute('contenteditable') === 'true' ||
+        activeEl.getAttribute('role') === 'textbox' ||
+        activeEl.closest?.('.monaco-editor') ||
+        activeEl.closest?.('.ace_editor') ||
+        activeEl.closest?.('.cm-editor'));
 
     if (isTyping) return;
 
+    // Ctrl + Shift + E: Send to Agent
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'KeyE' || e.key === 'E' || e.key === 'e')) {
+      e.preventDefault();
+      sendToAgent();
+      return;
+    }
+
+    // Ctrl + C: Copy Feedback for AI (if no text selected)
+    if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyC' || e.key === 'c') && !window.getSelection()?.toString().trim() && annotations.length > 0) {
+      e.preventDefault();
+      copyForAI();
+      return;
+    }
+
+    // Alt + T: Toggle Dock
     if ((e.altKey && e.code === 'KeyT') || (e.ctrlKey && e.shiftKey && e.code === 'KeyT') || e.key === 'F8') {
       e.preventDefault();
       toggleVisibility();
+      return;
     }
 
-    if ((e.altKey && e.code === 'KeyD') || (e.altKey && e.code === 'KeyA') || (e.ctrlKey && e.shiftKey && e.code === 'KeyD') || e.key === 'F9') {
-      e.preventDefault();
-      toggleInspect();
-    }
-
-    // Area Screenshot Mode Shortcut: Just "S" key (or Alt + S / F7)
-    const isScreenshotKey =
-      !e.ctrlKey &&
-      !e.metaKey &&
-      (
-        e.key?.toLowerCase() === 's' ||
-        e.code === 'KeyS' ||
-        e.keyCode === 83 ||
-        e.key === 'F7' ||
-        (e.altKey && (e.key === 's' || e.key === 'S' || e.code === 'KeyS'))
-      );
-
-    if (isScreenshotKey) {
+    // S key (alone) OR Alt + S: Toggle Screenshot
+    const isS = e.code === 'KeyS' || e.key === 's' || e.key === 'S';
+    if (!e.ctrlKey && !e.metaKey && (isS || (e.altKey && isS))) {
       e.preventDefault();
       toggleScreenshot();
+      return;
+    }
+
+    // A key (alone): Send to AI (Send All Pins Directly to Agent)
+    const isAKey = e.code === 'KeyA' || e.key === 'a' || e.key === 'A';
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && isAKey) {
+      e.preventDefault();
+      sendToAgent();
+      return;
+    }
+
+    // D / I key (alone) OR Alt + D: Toggle Inspect
+    const isD = e.code === 'KeyD' || e.key === 'd' || e.key === 'D';
+    const isI = e.code === 'KeyI' || e.key === 'i' || e.key === 'I';
+    if (!e.ctrlKey && !e.metaKey && (isD || isI || (e.altKey && isD))) {
+      e.preventDefault();
+      toggleInspect();
+      return;
     }
   }, true);
 
-  // Toolbar Button Click Handlers
-  shadow.getElementById('visualpatch-btn-inspect').addEventListener('click', () => toggleInspect());
-  shadow.getElementById('visualpatch-btn-screenshot').addEventListener('click', () => toggleScreenshot());
-  shadow.getElementById('visualpatch-btn-send-agent').addEventListener('click', sendToAgent);
-  shadow.getElementById('visualpatch-btn-copy').addEventListener('click', copyForAI);
-  shadow.getElementById('visualpatch-btn-clear').addEventListener('click', () => {
-    if (annotations.length) {
-      annotations = [];
-      currentPinNumber = 1;
-      saveStorage();
-      renderPins();
-      cardsContainer.innerHTML = '';
-      showToast('All pins cleared');
-    }
-  });
+  // Chrome Runtime Message Listener (Popup & Background Commands)
+  if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      mountHost();
 
-  // Dynamic Resize Boundary Check (Keep toolbar in viewport)
-  window.addEventListener('resize', () => {
-    if (currentPos.x !== null && currentPos.y !== null) {
-      const safe = sanitizePos(currentPos);
-      if (safe.x === null) {
-        currentPos = { x: null, y: null };
-        toolbar.style.left = 'auto';
-        toolbar.style.top = 'auto';
-        toolbar.style.right = '24px';
-        toolbar.style.bottom = '24px';
-        try { localStorage.removeItem('visualpatch_toolbar_pos'); } catch (e) {}
-      } else {
-        toolbar.style.left = `${safe.x}px`;
-        toolbar.style.top = `${safe.y}px`;
+      if (request.action === 'PING') {
+        sendResponse({ success: true, status: 'OK', version: '2.3.0' });
+        return false;
       }
-    }
-  });
-
-  // Direct Chrome Extension Message Listener
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
-      if (req.action === 'SHOW_TOOLBAR' || req.action === 'TOGGLE_TOOLBAR') {
-        toggleVisibility(true);
-        if (req.resetPosition || currentPos.x === null || currentPos.x > window.innerWidth || currentPos.y > window.innerHeight) {
-          currentPos = { x: null, y: null };
-          toolbar.style.left = 'auto';
-          toolbar.style.top = 'auto';
-          toolbar.style.right = '24px';
-          toolbar.style.bottom = '24px';
-          try { localStorage.removeItem('visualpatch_toolbar_pos'); } catch (e) {}
-        }
-        sendResponse({ success: true, isVisible: true });
-      } else if (req.action === 'TOGGLE_INSPECT') {
+      if (request.action === 'TOGGLE_INSPECT') {
         toggleInspect();
         sendResponse({ success: true, isInspectMode });
-      } else if (req.action === 'TOGGLE_SCREENSHOT') {
+        return false;
+      }
+      if (request.action === 'TOGGLE_SCREENSHOT') {
         toggleScreenshot();
         sendResponse({ success: true, isScreenshotMode });
-      } else if (req.action === 'SEND_TO_AGENT') {
+        return false;
+      }
+      if (request.action === 'TOGGLE_TOOLBAR' || request.action === 'SHOW_TOOLBAR') {
+        toggleVisibility(true);
+        sendResponse({ success: true, isVisible });
+        return false;
+      }
+      if (request.action === 'SEND_TO_AGENT') {
         sendToAgent();
         sendResponse({ success: true });
+        return false;
       }
-      return true;
     });
   }
 
-  // Initialize
-  loadSaved();
-  console.log('%c[VisualPatch] Ready! Shortcuts: Esc / Alt+D (Inspect) · Alt+S (Screenshot Area) · Ctrl+C (Copy) · Alt+T (Toolbar)', 'background: #0071e3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+  // Toolbar Button Click Handlers
+  shadow.getElementById('visualpatch-btn-inspect')?.addEventListener('click', () => toggleInspect());
+  shadow.getElementById('visualpatch-btn-screenshot')?.addEventListener('click', () => toggleScreenshot());
+  shadow.getElementById('visualpatch-btn-send-agent')?.addEventListener('click', sendToAgent);
+  shadow.getElementById('visualpatch-btn-copy')?.addEventListener('click', copyForAI);
+  shadow.getElementById('visualpatch-btn-clear')?.addEventListener('click', () => {
+    annotations = [];
+    currentPinNumber = 1;
+    saveStorage();
+    renderPins();
+    cardsContainer.innerHTML = '';
+    showToast('All pins cleared');
+  });
+
+  // Auto-mount on Local & Preview URLs, or await user trigger on production
+  if (isLocalOrPreview) {
+    mountHost();
+    loadSaved();
+  }
+
+  console.log(
+    '%c[VisualPatch v2.3.0] Ready! Native GPU Tab Snap, Main-World Introspector & OS-Level Hotkeys active.',
+    'background: #0071e3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
+  );
 })();

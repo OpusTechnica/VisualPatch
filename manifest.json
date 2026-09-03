@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VisualPatch — Visual Feedback for AI Pair Programmers",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Universal in-browser visual inspection and feedback tool for web development with AI pair programmers (Claude, Cursor, ChatGPT, Windsurf, Copilot).",
   "permissions": [
     "storage",
@@ -20,11 +20,50 @@
       "matches": [
         "<all_urls>"
       ],
+      "js": ["bridge-main.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
       "js": ["content.js"],
       "run_at": "document_end",
       "all_frames": false
     }
   ],
+  "commands": {
+    "toggle-inspect": {
+      "suggested_key": {
+        "default": "Alt+D",
+        "mac": "Alt+D"
+      },
+      "description": "Toggle Element Inspector"
+    },
+    "toggle-screenshot": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Alt+S"
+      },
+      "description": "Toggle Marquee Screenshot / Snap"
+    },
+    "toggle-toolbar": {
+      "suggested_key": {
+        "default": "Alt+T",
+        "mac": "Alt+T"
+      },
+      "description": "Toggle VisualPatch Dock"
+    },
+    "send-to-agent": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "Send feedback to AI Agent"
+    }
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "VisualPatch"

@@ -1,6 +1,6 @@
 {
   "name": "visualpatch",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Universal in-browser visual feedback & pinpoint annotation tool for web development with AI pair programmers.",
   "author": "OpusTechnica",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "index.d.ts",
     "vanilla.js",
     "content.js",
-    "content.css",
+    "bridge-main.js",
     "manifest.json",
     "popup.html",
     "popup.js",

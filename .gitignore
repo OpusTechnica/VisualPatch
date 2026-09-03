@@ -2,6 +2,10 @@
 Thumbs.db
 *.log
 node_modules/
+dist/
+*.zip
+*.tgz
+*.tar.gz
 .env
 .env.local
 .env.*.local

@@ -313,7 +313,7 @@
       </div>
       <div class="vp-title">
         VisualPatch
-        <span class="vp-badge">v2.0</span>
+        <span class="vp-badge">v2.3</span>
       </div>
     </div>
     <div class="vp-status">
@@ -342,7 +342,7 @@
     </button>
 
     <!-- Area Screenshot -->
-    <button class="vp-action-row" id="toggle-screenshot" title="Press S to capture screenshot">
+    <button class="vp-action-row" id="toggle-screenshot" title="Press Alt+S to capture screenshot">
       <div class="vp-row-left">
         <svg class="vp-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -350,11 +350,11 @@
         </svg>
         <div class="vp-action-meta">
           <span class="vp-action-title">Area Screenshot</span>
-          <span class="vp-action-sub">Spotlight crop & dimension pill</span>
+          <span class="vp-action-sub">GPU spotlight crop</span>
         </div>
       </div>
       <div class="vp-kbd-group">
-        <kbd>S</kbd>
+        <kbd>Alt</kbd><kbd>S</kbd>
       </div>
     </button>
 
@@ -371,11 +371,11 @@
         </svg>
         <div class="vp-action-meta">
           <span class="vp-action-title">Inspect & Drop Pin</span>
-          <span class="vp-action-sub">Live selector & text extraction</span>
+          <span class="vp-action-sub">Framework component & file detection</span>
         </div>
       </div>
       <div class="vp-kbd-group">
-        <kbd>Esc</kbd>
+        <kbd>Alt</kbd><kbd>D</kbd>
       </div>
     </button>
 
@@ -406,21 +406,17 @@
       </svg>
       <span>Keyboard Shortcuts</span>
     </div>
-    <div class="vp-matrix-grid">
-      <div class="vp-kbd-group"><kbd>Ctrl</kbd><kbd>↵</kbd></div>
-      <div class="vp-matrix-desc">Send to Agent ⚡ (.visualpatch)</div>
+      <div class="vp-kbd-group"><kbd>Esc</kbd> / <kbd>D</kbd></div>
+      <div class="vp-matrix-desc">Enter / Exit Inspect Mode</div>
 
       <div class="vp-kbd-group"><kbd>S</kbd></div>
-      <div class="vp-matrix-desc">Crop Area Screenshot</div>
+      <div class="vp-matrix-desc">Crop Area Screenshot (On / Off)</div>
 
-      <div class="vp-kbd-group"><kbd>Ctrl</kbd><kbd>C</kbd></div>
-      <div class="vp-matrix-desc">Copy for AI (+ image strip)</div>
-
-      <div class="vp-kbd-group"><kbd>Esc</kbd></div>
-      <div class="vp-matrix-desc">Toggle Inspect / Close Card</div>
+      <div class="vp-kbd-group"><kbd>A</kbd> / <kbd>Ctrl</kbd><kbd>↵</kbd></div>
+      <div class="vp-matrix-desc">Send All Pins to AI ⚡ (.visualpatch)</div>
 
       <div class="vp-kbd-group"><kbd>Alt</kbd><kbd>T</kbd></div>
-      <div class="vp-matrix-desc">Minimize / Show Dock</div>
+      <div class="vp-matrix-desc">Collapse / Expand Toolbar</div>
     </div>
   </div>
 
