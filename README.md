@@ -135,7 +135,7 @@ export default function RootLayout({ children }) {
 
 ### Option 3: Download Chrome Extension (`.zip`)
 
-1. **Download latest release**: [VisualPatch-v2.0.0.zip](https://github.com/OpusTechnica/VisualPatch/releases/download/v2.0.0/VisualPatch-v2.0.0.zip) (or clone the repo).
+1. **Download latest release**: [VisualPatch-v2.3.0.zip](https://github.com/OpusTechnica/VisualPatch/releases/download/v2.3.0/VisualPatch-v2.3.0.zip) (or clone the repo).
 2. Unzip the package.
 3. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
 4. Enable **Developer mode** toggle.
